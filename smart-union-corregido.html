@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Smart Union - Tu banco, sin papeles.</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --teal: #00B8C8;
+    --teal-dark: #008fa0;
+    --teal-light: #e0f8fb;
+    --navy: #1a2756;
+    --navy-light: #243070;
+    --white: #ffffff;
+    --gray-light: #f4f6fa;
+    --gray: #8a9ab5;
+    --gray-dark: #4a5568;
+    --danger: #e53e3e;
+    --warning: #f6ad55;
+    --success: #38a169;
+    --font-main: 'Poppins', sans-serif;
+    --font-body: 'Nunito', sans-serif;
+    --radius: 18px;
+    --shadow: 0 8px 32px rgba(0,184,200,0.13);
+    --shadow-strong: 0 16px 48px rgba(0,0,0,0.18);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body {
+    height:100%; width:100%;
+    background: var(--navy);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+  #app-shell {
+    width:100%; max-width:420px; height:100vh; max-height:900px;
+    margin:0 auto;
+    background:var(--white);
+    border-radius:0;
+    position:relative;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    box-shadow: var(--shadow-strong);
+  }
+  .screen {
+    position:absolute; inset:0;
+    display:none; flex-direction:column;
+    overflow-y:auto; overflow-x:hidden;
+    background:var(--white);
+    animation: fadeIn .32s ease;
+  }
+  .screen.active { display:flex; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ---- SPLASH ---- */
+  #screen-splash {
+    background: linear-gradient(160deg, var(--navy) 0%, #0d1a3a 60%, #0a2a3a 100%);
+    align-items:center; justify-content:center; gap:28px;
+  }
+  .splash-bg { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .splash-bg::before {
+    content:''; position:absolute; width:500px; height:500px;
+    background: radial-gradient(circle, rgba(0,184,200,0.18) 0%, transparent 70%);
+    top:-100px; left:-100px; border-radius:50%;
+  }
+  .splash-bg::after {
+    content:''; position:absolute; width:340px; height:340px;
+    background: radial-gradient(circle, rgba(0,184,200,0.12) 0%, transparent 70%);
+    bottom:-80px; right:-80px; border-radius:50%;
+  }
+  .splash-logo-wrap {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    position:relative; z-index:2;
+  }
+  .splash-logo-icon {
+    width:110px; height:110px;
+    background: rgba(0,184,200,0.13);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border: 2.5px solid rgba(0,184,200,0.4);
+    box-shadow: 0 0 40px rgba(0,184,200,0.25);
+    margin-bottom:6px;
+  }
+  .splash-logo-icon svg { width:68px; height:68px; }
+  .splash-brand {
+    font-family: var(--font-main);
+    font-size:2.2rem; font-weight:800; color:var(--white);
+    letter-spacing:-0.5px; line-height:1;
+  }
+  .splash-brand span { color:var(--teal); }
+  .splash-tagline {
+    color:rgba(255,255,255,0.72); font-size:1.05rem; font-weight:400;
+    margin-top:4px; letter-spacing:0.2px;
+  }
+  .splash-actions {
+    display:flex; flex-direction:column; gap:14px; width:82%; z-index:2;
+  }
+  .btn-primary {
+    background: linear-gradient(90deg, var(--teal) 0%, #00d4e8 100%);
+    color:var(--white); border:none; border-radius:50px;
+    padding:15px 0; font-size:1rem; font-weight:700;
+    cursor:pointer; width:100%;
+    box-shadow: 0 6px 24px rgba(0,184,200,0.35);
+    transition: transform .15s, box-shadow .15s;
+    font-family: var(--font-main);
+    letter-spacing:0.1px;
+  }
+  .btn-primary:active { transform:scale(0.97); box-shadow:0 2px 10px rgba(0,184,200,0.2); }
+  .btn-outline {
+    background:transparent; color:var(--teal);
+    border:2px solid var(--teal); border-radius:50px;
+    padding:13px 0; font-size:1rem; font-weight:700;
+    cursor:pointer; width:100%;
+    transition: background .18s, color .18s;
+    font-family: var(--font-main);
+  }
+  .btn-outline:active { background:rgba(0,184,200,0.1); }
+  .splash-secure {
+    display:flex; align-items:center; gap:7px;
+    color:rgba(255,255,255,0.5); font-size:0.82rem; z-index:2;
+  }
+  .splash-secure svg { width:16px; height:16px; }
+
+  /* ---- TOPBAR ---- */
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 20px 10px;
+    background:var(--white);
+    position:sticky; top:0; z-index:10;
+  }
+  .topbar-back {
+    width:36px; height:36px; border-radius:50%;
+    background:var(--gray-light); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .topbar-title { font-family:var(--font-main); font-weight:700; font-size:1rem; color:var(--navy); }
+  .topbar-right { width:36px; }
+
+  /* ---- REGISTER STEPS ---- */
+  #screen-register { background:var(--white); }
+  .steps-indicator {
+    display:flex; align-items:center; justify-content:center;
+    gap:0; padding:16px 24px 0;
+  }
+  .step-dot {
+    width:30px; height:30px; border-radius:50%;
+    background:var(--gray-light); color:var(--gray);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:0.88rem; font-family:var(--font-main);
+    transition: background .3s, color .3s;
+    flex-shrink:0;
+  }
+  .step-dot.active { background:var(--teal); color:var(--white); box-shadow:0 4px 14px rgba(0,184,200,0.3); }
+  .step-dot.done { background:var(--success); color:var(--white); }
+  .step-line { flex:1; height:3px; background:var(--gray-light); margin:0 6px; border-radius:2px; transition: background .3s; }
+  .step-line.done { background:var(--success); }
+  .step-label {
+    text-align:center; font-size:0.78rem; color:var(--teal);
+    font-weight:600; font-family:var(--font-main); padding:6px 0 0;
+  }
+  .step-title {
+    text-align:center; font-family:var(--font-main); font-size:1.35rem;
+    font-weight:800; color:var(--navy); padding:12px 28px 0; line-height:1.3;
+  }
+  .step-body { padding:18px 24px 24px; flex:1; display:flex; flex-direction:column; gap:14px; }
+
+  /* STEP 1 */
+  .cedula-upload-area {
+    border:2.5px dashed var(--teal); border-radius:var(--radius);
+    background:var(--teal-light); min-height:180px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:12px; cursor:pointer; transition:background .2s;
+    position:relative; overflow:hidden;
+  }
+  .cedula-upload-area:active { background:#c8f4f8; }
+  .cedula-upload-area img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; border-radius:calc(var(--radius) - 2px); }
+  .upload-icon svg { width:44px; height:44px; color:var(--teal); }
+  .upload-text { font-weight:700; color:var(--navy); font-size:0.97rem; }
+  .upload-sub { font-size:0.8rem; color:var(--gray); }
+  .cam-btn-row { display:flex; gap:10px; }
+  .cam-btn {
+    flex:1; display:flex; align-items:center; justify-content:center; gap:7px;
+    padding:11px; border-radius:12px; border:2px solid var(--teal);
+    background:var(--white); color:var(--teal); font-weight:700; font-size:0.87rem;
+    cursor:pointer; transition:background .18s;
+    font-family:var(--font-main);
+  }
+  .cam-btn:active { background:var(--teal-light); }
+  .hint-box {
+    background:var(--teal-light); border-radius:12px; padding:12px 14px;
+    display:flex; align-items:flex-start; gap:10px; font-size:0.83rem; color:var(--navy-light);
+  }
+  .hint-box svg { flex-shrink:0; margin-top:1px; }
+
+  /* STEP 2 */
+  .facial-area {
+    border-radius:var(--radius); overflow:hidden;
+    background:#000; min-height:280px; position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #facial-video { width:100%; height:100%; object-fit:cover; display:none; }
+  .facial-overlay {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px;
+  }
+  .face-circle {
+    width:160px; height:160px; border-radius:50%;
+    border:3.5px solid var(--teal);
+    box-shadow:0 0 0 8px rgba(0,184,200,0.2);
+    display:flex; align-items:center; justify-content:center;
+    animation: pulse-ring 2s infinite;
+  }
+  @keyframes pulse-ring {
+    0%,100%{box-shadow:0 0 0 8px rgba(0,184,200,0.2)}
+    50%{box-shadow:0 0 0 18px rgba(0,184,200,0.07)}
+  }
+  .face-status {
+    background:rgba(0,0,0,0.55); color:var(--white); padding:8px 18px;
+    border-radius:50px; font-size:0.88rem; font-weight:600; text-align:center;
+  }
+  .facial-instructions { display:flex; flex-direction:column; gap:8px; }
+  .instruction-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px; border-radius:12px; background:var(--gray-light);
+    font-size:0.85rem; font-weight:600; color:var(--navy);
+    transition: background .3s, color .3s;
+  }
+  .instruction-item.done { background:#d4f4e2; color:var(--success); }
+  .instruction-item .check { width:22px; height:22px; border-radius:50%; background:var(--gray); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:background .3s; }
+  .instruction-item.done .check { background:var(--success); }
+
+  /* STEP 3 */
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-label { font-size:0.82rem; font-weight:700; color:var(--navy); font-family:var(--font-main); }
+  .form-input {
+    border:2px solid #e2e8f0; border-radius:12px;
+    padding:12px 15px; font-size:0.95rem; font-family:var(--font-body);
+    color:var(--navy); background:var(--white); outline:none;
+    transition:border-color .2s;
+  }
+  .form-input:focus { border-color:var(--teal); }
+  .form-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a9ab5' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; cursor:pointer; }
+  .radio-group { display:flex; gap:10px; }
+  .radio-card {
+    flex:1; border:2px solid #e2e8f0; border-radius:12px; padding:12px 10px;
+    display:flex; flex-direction:column; align-items:center; gap:5px;
+    cursor:pointer; transition:border-color .2s, background .2s;
+    font-size:0.82rem; font-weight:700; color:var(--gray); font-family:var(--font-main);
+  }
+  .radio-card.selected { border-color:var(--teal); background:var(--teal-light); color:var(--navy); }
+  .radio-card svg { width:26px; height:26px; }
+  .terms-row { display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--gray-dark); }
+  .terms-row input { width:18px; height:18px; accent-color:var(--teal); cursor:pointer; }
+  .terms-row a { color:var(--teal); text-decoration:none; font-weight:700; }
+
+  /* ---- HOME SCREEN ---- */
+  #screen-home { background:var(--gray-light); }
+  .home-header {
+    background: linear-gradient(135deg, var(--navy) 0%, #1a3a6a 100%);
+    padding:28px 22px 32px; position:relative; overflow:hidden;
+  }
+  .home-header::before {
+    content:''; position:absolute; width:220px; height:220px;
+    background:radial-gradient(circle,rgba(0,184,200,0.18) 0%,transparent 70%);
+    top:-60px; right:-60px; border-radius:50%;
+  }
+  .home-toprow {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .home-logo-sm {
+    display:flex; align-items:center; gap:8px;
+    font-family:var(--font-main); font-weight:800; color:var(--white); font-size:1.1rem;
+  }
+  .home-logo-sm .lock-icon {
+    background:rgba(0,184,200,0.22); border-radius:8px; padding:5px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .notif-btn {
+    width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,0.12);
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    position:relative;
+  }
+  .notif-badge {
+    position:absolute; top:4px; right:4px;
+    width:10px; height:10px; background:var(--danger); border-radius:50%;
+    border:2px solid var(--navy); display:none;
+  }
+  .notif-badge.show { display:block; }
+  .profile-btn {
+    width:38px; height:38px; border-radius:50%;
+    background:rgba(255,255,255,0.18); border:2px solid rgba(255,255,255,0.3);
+    cursor:pointer; overflow:hidden; display:flex; align-items:center; justify-content:center;
+  }
+  .profile-btn img { width:100%; height:100%; object-fit:cover; }
+  .home-greeting {
+    font-family:var(--font-main); color:rgba(255,255,255,0.7); font-size:0.9rem;
+    margin-bottom:2px;
+  }
+  .home-name { font-family:var(--font-main); font-weight:800; color:var(--white); font-size:1.55rem; margin-bottom:8px; }
+  .verified-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    background:rgba(56,161,105,0.22); border:1.5px solid rgba(56,161,105,0.5);
+    border-radius:50px; padding:4px 12px; font-size:0.78rem; font-weight:700;
+    color:#68d391; font-family:var(--font-main);
+  }
+  .last-verified { color:rgba(255,255,255,0.45); font-size:0.75rem; margin-top:5px; }
+
+  .qr-btn-card {
+    margin: -28px 18px 0; border-radius:var(--radius);
+    background:var(--white); box-shadow:var(--shadow);
+    padding:22px; display:flex; flex-direction:column; align-items:center; gap:10px;
+    cursor:pointer; transition:transform .18s, box-shadow .18s;
+    position:relative; z-index:3;
+  }
+  .qr-btn-card:active { transform:scale(0.97); box-shadow:0 4px 16px rgba(0,184,200,0.15); }
+  .qr-icon-circle {
+    width:72px; height:72px; border-radius:50%;
+    background: linear-gradient(135deg, var(--teal) 0%, #00d4e8 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 24px rgba(0,184,200,0.4);
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+  .qr-btn-label { font-family:var(--font-main); font-weight:800; color:var(--navy); font-size:1.05rem; }
+  .qr-btn-sub { font-size:0.8rem; color:var(--gray); }
+
+  .home-section-title {
+    font-family:var(--font-main); font-weight:800; color:var(--navy);
+    font-size:1rem; padding:18px 20px 10px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .home-section-title a { font-size:0.82rem; font-weight:700; color:var(--teal); text-decoration:none; cursor:pointer; }
+
+  .folders-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:0 18px 18px; }
+  .folder-card {
+    background:var(--white); border-radius:var(--radius); padding:18px 14px;
+    display:flex; flex-direction:column; gap:8px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.06); cursor:pointer;
+    transition:transform .18s, box-shadow .18s; position:relative; overflow:hidden;
+    border:2px solid transparent;
+  }
+  .folder-card:active { transform:scale(0.97); }
+  .folder-card.has-alert { border-color:var(--danger); }
+  .folder-icon {
+    width:42px; height:42px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    margin-bottom:2px;
+  }
+  .folder-name { font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.9rem; line-height:1.2; }
+  .folder-sub { font-size:0.75rem; color:var(--gray); }
+  .folder-alert-dot {
+    position:absolute; top:10px; right:10px;
+    width:10px; height:10px; background:var(--danger); border-radius:50%;
+    display:none;
+  }
+  .folder-alert-dot.show { display:block; }
+
+  /* ---- BOTTOM NAV ---- */
+  .bottom-nav {
+    display:flex; background:var(--white); border-top:1.5px solid #e8edf5;
+    padding:8px 0 18px; flex-shrink:0;
+  }
+  .nav-item {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:0.7rem; font-weight:600; color:var(--gray);
+    cursor:pointer; padding:5px 0; font-family:var(--font-main);
+    transition:color .18s;
+  }
+  .nav-item.active { color:var(--teal); }
+  .nav-item svg { width:22px; height:22px; }
+
+  /* ---- QR SCREEN ---- */
+  #screen-qr {
+    background: linear-gradient(160deg,var(--navy) 0%,#0d1a3a 100%);
+    align-items:center; justify-content:flex-start; padding-top:0;
+  }
+  .qr-screen-topbar {
+    display:flex; align-items:center; width:100%; padding:20px 20px 10px;
+  }
+  .qr-screen-back {
+    width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.12);
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .qr-screen-title { flex:1; text-align:center; font-family:var(--font-main); font-weight:700; color:var(--white); font-size:1.05rem; }
+  .qr-container {
+    display:flex; flex-direction:column; align-items:center; gap:20px;
+    padding:10px 30px 30px; width:100%;
+  }
+  .qr-card {
+    background:var(--white); border-radius:24px; padding:28px;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    width:100%; box-shadow:0 16px 48px rgba(0,0,0,0.3);
+  }
+  .qr-instruction { font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.95rem; text-align:center; }
+  #qr-canvas { border-radius:12px; }
+  .qr-timer-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .qr-timer-label { font-size:0.8rem; color:var(--gray); font-weight:600; }
+  .qr-timer {
+    font-family:var(--font-main); font-size:2.2rem; font-weight:800; color:var(--teal);
+    transition:color .3s;
+  }
+  .qr-timer.urgent { color:var(--danger); animation:blink .7s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .qr-timer-bar { width:200px; height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden; }
+  .qr-timer-fill { height:100%; background:var(--teal); border-radius:3px; transition:width 1s linear, background .5s; }
+  .qr-timer-fill.urgent { background:var(--danger); }
+  .qr-expired-overlay {
+    position:absolute; inset:0; background:rgba(255,255,255,0.95);
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; border-radius:24px;
+  }
+  .qr-expired-overlay.show { display:flex; }
+  .qr-cancel-btn {
+    background:rgba(255,255,255,0.12); color:var(--white); border:none; border-radius:50px;
+    padding:13px 40px; font-size:1rem; font-weight:700; cursor:pointer;
+    font-family:var(--font-main);
+  }
+
+  /* ---- VAULT ---- */
+  #screen-vault { background:var(--gray-light); }
+  .vault-folder-list { padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
+  .vault-folder-item {
+    background:var(--white); border-radius:var(--radius); padding:16px 18px;
+    display:flex; align-items:center; gap:14px; cursor:pointer;
+    box-shadow:0 2px 10px rgba(0,0,0,0.05); transition:transform .15s;
+    border:2px solid transparent;
+  }
+  .vault-folder-item:active { transform:scale(0.98); }
+  .vault-folder-item.has-alert { border-color:var(--danger); }
+  .vault-folder-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .vault-folder-info { flex:1; }
+  .vault-folder-name { font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.95rem; }
+  .vault-folder-sub { font-size:0.78rem; color:var(--gray); margin-top:1px; }
+  .vault-folder-alert { font-size:0.72rem; color:var(--danger); font-weight:700; margin-top:2px; }
+  .vault-folder-arrow { color:var(--gray); }
+
+  /* ---- DOCUMENT LIST ---- */
+  #screen-docs { background:var(--gray-light); }
+  .docs-list { padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
+  .doc-item {
+    background:var(--white); border-radius:var(--radius); padding:14px 16px;
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05); transition:transform .15s;
+    border:2px solid transparent; position:relative;
+  }
+  .doc-item:active { transform:scale(0.98); }
+  .doc-item.has-alert { border-color:var(--danger); }
+  .doc-item.uploaded { border-color:var(--success); }
+  .doc-icon { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .doc-info { flex:1; min-width:0; }
+  .doc-name { font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .doc-status { font-size:0.76rem; margin-top:2px; }
+  .doc-status.ok { color:var(--success); font-weight:700; }
+  .doc-status.alert { color:var(--danger); font-weight:700; }
+  .doc-status.pending { color:var(--gray); }
+  .doc-expiry { font-size:0.72rem; color:var(--gray-dark); margin-top:1px; }
+  .doc-upload-btn {
+    background:var(--teal-light); color:var(--teal); border:none; border-radius:8px;
+    padding:7px 12px; font-size:0.78rem; font-weight:700; cursor:pointer;
+    font-family:var(--font-main); flex-shrink:0;
+  }
+
+  /* ---- DOCUMENT DETAIL ---- */
+  #screen-doc-detail { background:var(--gray-light); }
+  .doc-detail-body { padding:16px 18px; display:flex; flex-direction:column; gap:14px; }
+  .doc-preview-area {
+    background:var(--white); border-radius:var(--radius);
+    min-height:200px; display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:10px; overflow:hidden;
+    box-shadow:0 2px 12px rgba(0,0,0,0.07); position:relative;
+  }
+  .doc-preview-area img { width:100%; height:100%; object-fit:contain; max-height:220px; }
+  .doc-info-card {
+    background:var(--white); border-radius:var(--radius); padding:16px 18px;
+    display:flex; flex-direction:column; gap:12px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.07);
+  }
+  .doc-info-row { display:flex; justify-content:space-between; align-items:center; }
+  .doc-info-label { font-size:0.8rem; color:var(--gray); font-weight:600; }
+  .doc-info-val { font-size:0.88rem; color:var(--navy); font-weight:700; font-family:var(--font-main); }
+  .doc-info-val.danger { color:var(--danger); }
+  .expiry-input-wrap { display:flex; flex-direction:column; gap:6px; }
+  .expiry-label { font-size:0.82rem; font-weight:700; color:var(--navy); font-family:var(--font-main); }
+  .expiry-input { border:2px solid #e2e8f0; border-radius:12px; padding:11px 14px; font-size:0.93rem; font-family:var(--font-body); color:var(--navy); outline:none; }
+  .expiry-input:focus { border-color:var(--teal); }
+  .alert-banner {
+    background:#fff5f5; border:2px solid var(--danger); border-radius:12px;
+    padding:12px 14px; display:flex; align-items:flex-start; gap:10px;
+    font-size:0.83rem; color:var(--danger); font-weight:600;
+  }
+  .alert-banner svg { flex-shrink:0; }
+
+  /* ---- QR mini en detalle de documento ---- */
+  .doc-qr-section {
+    background:var(--white); border-radius:var(--radius); padding:18px;
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.07);
+  }
+  .doc-qr-title {
+    font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.9rem;
+    text-align:center;
+  }
+  .doc-qr-sub { font-size:0.75rem; color:var(--gray); text-align:center; }
+  .doc-qr-canvas { border-radius:10px; }
+  .doc-qr-share-btn {
+    background:var(--teal-light); color:var(--teal); border:none; border-radius:10px;
+    padding:10px 22px; font-size:0.85rem; font-weight:700; cursor:pointer;
+    font-family:var(--font-main); display:flex; align-items:center; gap:7px;
+  }
+
+  /* ---- QR banner por producto (lista de documentos) ---- */
+  .product-qr-banner {
+    margin:12px 18px 0; border-radius:var(--radius);
+    background:linear-gradient(135deg, var(--navy) 0%, #1a3a6a 100%);
+    padding:16px 18px; display:flex; align-items:center; gap:14px;
+    cursor:pointer; box-shadow:0 4px 16px rgba(26,39,86,0.25);
+    transition:transform .15s;
+  }
+  .product-qr-banner:active { transform:scale(0.98); }
+  .product-qr-banner .qr-mini-icon {
+    width:46px; height:46px; border-radius:12px; flex-shrink:0;
+    background:rgba(0,184,200,0.25); display:flex; align-items:center; justify-content:center;
+  }
+  .product-qr-banner-text { flex:1; }
+  .product-qr-banner-title { font-family:var(--font-main); font-weight:700; color:var(--white); font-size:0.88rem; }
+  .product-qr-banner-sub { font-size:0.74rem; color:rgba(255,255,255,0.65); margin-top:1px; }
+
+  /* ---- Bloqueo de producto por tipo de empleo ---- */
+  .product-blocked-banner {
+    margin:14px 18px 0; border-radius:var(--radius);
+    background:#fff5f5; border:2px solid var(--danger);
+    padding:16px 18px; display:flex; align-items:flex-start; gap:12px;
+  }
+  .product-blocked-banner svg { flex-shrink:0; margin-top:1px; }
+  .product-blocked-title { font-family:var(--font-main); font-weight:700; color:var(--danger); font-size:0.9rem; }
+  .product-blocked-text { font-size:0.8rem; color:var(--gray-dark); margin-top:3px; line-height:1.4; }
+
+  /* ---- Codeudor section ---- */
+  .codeudor-section {
+    background:var(--white); border-radius:var(--radius); padding:16px 18px;
+    display:flex; flex-direction:column; gap:10px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.07);
+    border:2px dashed #e2e8f0;
+  }
+  .codeudor-title {
+    font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.92rem;
+    display:flex; align-items:center; gap:7px;
+  }
+  .codeudor-sub { font-size:0.78rem; color:var(--gray); }
+  .codeudor-toggle-btn {
+    background:var(--teal-light); color:var(--teal); border:none; border-radius:10px;
+    padding:10px; font-size:0.85rem; font-weight:700; cursor:pointer;
+    font-family:var(--font-main);
+  }
+
+  /* ---- Ajustes / Perfil editable ---- */
+  .settings-section-title {
+    font-family:var(--font-main); font-weight:700; color:var(--navy);
+    font-size:0.85rem; padding:4px 2px 0;
+  }
+  .settings-card {
+    background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow);
+    overflow:hidden; display:flex; flex-direction:column;
+  }
+  .settings-row {
+    display:flex; align-items:flex-start; gap:12px;
+    padding:14px 16px; border-bottom:1px solid #f0f4f8;
+  }
+  .settings-row:last-child { border-bottom:none; }
+  .settings-row-icon {
+    width:38px; height:38px; border-radius:10px; background:var(--teal-light);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;
+  }
+  .settings-row-body { flex:1; min-width:0; }
+  .settings-row-label { font-size:0.76rem; color:var(--gray); font-weight:600; }
+  .settings-row-value {
+    font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.92rem;
+    margin-top:2px; word-break:break-word;
+  }
+  .settings-edit-btn {
+    width:34px; height:34px; border-radius:50%; background:var(--gray-light);
+    border:none; cursor:pointer; color:var(--teal); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .18s;
+  }
+  .settings-edit-btn:active { background:var(--teal-light); }
+  .settings-edit-wrap { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+  .settings-edit-actions { display:flex; gap:8px; }
+  .settings-save-btn {
+    flex:1; background:var(--teal); color:var(--white); border:none; border-radius:10px;
+    padding:9px; font-size:0.82rem; font-weight:700; cursor:pointer; font-family:var(--font-main);
+  }
+  .settings-cancel-btn {
+    flex:1; background:var(--gray-light); color:var(--gray-dark); border:none; border-radius:10px;
+    padding:9px; font-size:0.82rem; font-weight:700; cursor:pointer; font-family:var(--font-main);
+  }
+
+  /* ---- HISTORY ---- */
+  #screen-history { background:var(--gray-light); }
+  .history-list { padding:12px 18px; display:flex; flex-direction:column; gap:10px; }
+  .history-item {
+    background:var(--white); border-radius:14px; padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  }
+  .history-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .history-info { flex:1; }
+  .history-title { font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.88rem; }
+  .history-date { font-size:0.75rem; color:var(--gray); margin-top:1px; }
+  .history-badge { font-size:0.72rem; font-weight:700; padding:3px 9px; border-radius:50px; }
+  .history-badge.qr { background:#e0f8fb; color:var(--teal); }
+  .history-badge.doc { background:#e8f4e8; color:var(--success); }
+  .history-badge.alert { background:#fff0f0; color:var(--danger); }
+
+  /* ---- NOTIFICATIONS OVERLAY ---- */
+  #notif-overlay {
+    position:absolute; inset:0; background:rgba(0,0,0,0.5); z-index:100; display:none; align-items:flex-start; justify-content:flex-end;
+  }
+  #notif-overlay.show { display:flex; }
+  .notif-panel {
+    width:88%; max-height:75%; background:var(--white); border-radius:0 0 24px 24px;
+    box-shadow:var(--shadow-strong); overflow-y:auto; padding:18px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .notif-panel-title { font-family:var(--font-main); font-weight:800; color:var(--navy); font-size:1rem; margin-bottom:4px; }
+  .notif-item {
+    display:flex; align-items:flex-start; gap:11px;
+    padding:12px; background:var(--gray-light); border-radius:12px;
+  }
+  .notif-item.unread { background:#fff5f5; border-left:3px solid var(--danger); }
+  .notif-item-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .notif-item-body { flex:1; }
+  .notif-item-title { font-weight:700; font-size:0.85rem; color:var(--navy); font-family:var(--font-main); }
+  .notif-item-desc { font-size:0.78rem; color:var(--gray-dark); margin-top:2px; }
+  .notif-item-time { font-size:0.72rem; color:var(--gray); margin-top:2px; }
+
+  /* ---- CAMERA MODAL ---- */
+  #camera-modal {
+    position:absolute; inset:0; background:#000; z-index:200; display:none; flex-direction:column;
+  }
+  #camera-modal.show { display:flex; }
+  #camera-video { width:100%; flex:1; object-fit:cover; }
+  .camera-controls {
+    padding:24px; display:flex; align-items:center; justify-content:space-between;
+    background:rgba(0,0,0,0.8);
+  }
+  .cam-close-btn {
+    width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.15);
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--white);
+  }
+  .cam-capture-btn {
+    width:68px; height:68px; border-radius:50%;
+    background:var(--white); border:4px solid rgba(255,255,255,0.4);
+    cursor:pointer; transition:transform .15s;
+  }
+  .cam-capture-btn:active { transform:scale(0.92); }
+  .cam-gallery-btn {
+    width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.15);
+    border:none; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  #camera-canvas { display:none; }
+
+  /* ---- SUCCESS ANIM ---- */
+  .success-anim {
+    display:flex; flex-direction:column; align-items:center; gap:14px; padding:30px 24px;
+  }
+  .success-circle {
+    width:90px; height:90px; border-radius:50%;
+    background:linear-gradient(135deg,var(--success),#68d391);
+    display:flex; align-items:center; justify-content:center;
+    animation:popIn .4s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 12px 36px rgba(56,161,105,0.35);
+  }
+  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+  .success-title { font-family:var(--font-main); font-weight:800; color:var(--navy); font-size:1.3rem; text-align:center; }
+  .success-sub { font-size:0.88rem; color:var(--gray); text-align:center; }
+
+  /* ---- SCROLLBAR ---- */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:rgba(0,184,200,0.3); border-radius:2px; }
+
+  /* ---- TOAST ---- */
+  #toast {
+    position:absolute; bottom:90px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--navy); color:var(--white); padding:12px 22px; border-radius:50px;
+    font-size:0.85rem; font-weight:600; font-family:var(--font-main);
+    opacity:0; transition:all .3s; z-index:300; white-space:nowrap; pointer-events:none;
+    max-width:90%;
+  }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* Vault employee type banner */
+  .vault-emptype-banner {
+    margin:12px 18px 0;
+    padding:10px 16px;
+    border-radius:12px;
+    display:flex; align-items:center; gap:8px;
+    font-size:0.82rem; font-weight:700; font-family:var(--font-main);
+  }
+  .vault-emptype-banner.empleado { background:#e0edff; color:#3a5bd9; }
+  .vault-emptype-banner.independiente { background:#fff8e0; color:#b07d00; }
+  .vault-emptype-banner.pensionado { background:#f0ffe8; color:#2a7a40; }
+
+  /* Requisitos por tipo en doc detail */
+  .req-info-box {
+    background:var(--teal-light); border-radius:12px; padding:14px 16px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .req-info-box-title {
+    font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.85rem;
+    display:flex; align-items:center; gap:6px;
+  }
+  .req-info-list { list-style:none; display:flex; flex-direction:column; gap:5px; }
+  .req-info-list li {
+    font-size:0.78rem; color:var(--navy-light);
+    display:flex; align-items:flex-start; gap:6px;
+  }
+  .req-info-list li::before { content:'•'; color:var(--teal); font-weight:900; flex-shrink:0; margin-top:1px; }
+
+  /* MISC */
+  .section-pad { padding:0 18px 80px; }
+  .spacer-bottom { height:80px; }
+  input[type=file] { display:none; }
+  .empty-state { display:flex; flex-direction:column; align-items:center; gap:10px; padding:40px 20px; color:var(--gray); font-size:0.9rem; }
+  .empty-state svg { width:52px; height:52px; opacity:.4; }
+
+  @media (min-height:900px) { #app-shell { max-height:100vh; } }
+
+  /* ---- FIXES: inputs ocultos, hoja de carga, contenido QR ---- */
+  input[type="file"] { display:none !important; }
+  #camera-modal { position:fixed; left:50%; transform:translateX(-50%); top:0; bottom:0; width:100%; max-width:420px; z-index:300; }
+  #camera-video { min-height:0; background:#000; }
+  #upload-sheet {
+    position:fixed; left:50%; transform:translateX(-50%); top:0; bottom:0; width:100%; max-width:420px;
+    background:rgba(10,20,50,0.55); z-index:250; display:none; align-items:flex-end;
+  }
+  #upload-sheet.show { display:flex; }
+  .sheet { width:100%; background:var(--white); border-radius:24px 24px 0 0; padding:22px 20px 28px; display:flex; flex-direction:column; gap:10px; animation:fadeIn .25s ease; }
+  .sheet-title { font-family:var(--font-main); font-weight:800; color:var(--navy); font-size:1.05rem; text-align:center; margin-bottom:6px; }
+  .sheet-btn { padding:15px; border-radius:14px; border:1.5px solid #e2e8f0; background:#f8fafc; font-family:var(--font-main); font-weight:700; color:var(--navy); font-size:0.95rem; cursor:pointer; }
+  .sheet-btn:active { background:#e0f8fb; border-color:var(--teal); }
+  .sheet-btn.cancel { background:transparent; border:none; color:var(--gray); }
+  #qr-canvas { background:#fff; padding:10px; border:2px solid #e2e8f0; border-radius:16px; display:flex; justify-content:center; }
+  #qr-canvas canvas, #qr-canvas img { max-width:100%; height:auto; }
+  .qr-contents { width:100%; background:rgba(255,255,255,0.08); border-radius:18px; padding:16px 18px; color:#fff; }
+  .qr-contents-title { font-family:var(--font-main); font-weight:700; font-size:0.9rem; margin-bottom:8px; }
+  .qr-contents ul { list-style:none; display:flex; flex-direction:column; gap:6px; }
+  .qr-contents li { font-size:0.82rem; color:rgba(255,255,255,0.85); display:flex; gap:8px; }
+  .qr-contents li::before { content:'✓'; color:var(--teal); font-weight:800; }
+  .qr-empty { font-size:0.82rem; color:rgba(255,255,255,0.7); }
+</style>
+</head>
+<body>
+<div id="app-shell">
+
+<!-- ==================== SPLASH ==================== -->
+<div id="screen-splash" class="screen active">
+  <div class="splash-bg"></div>
+  <div class="splash-logo-wrap">
+    <div class="splash-logo-icon">
+      <svg viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="34" cy="34" r="28" stroke="#00B8C8" stroke-width="3" opacity=".4"/>
+        <path d="M34 14C23.5 14 15 22.5 15 33v8c0 2.2 1.8 4 4 4h2v-12c0-7.2 5.8-13 13-13s13 5.8 13 13v12h2c2.2 0 4-1.8 4-4v-8c0-10.5-8.5-19-19-19z" fill="#00B8C8"/>
+        <rect x="20" y="40" width="28" height="18" rx="4" fill="#00B8C8"/>
+        <circle cx="34" cy="49" r="3.5" fill="white"/>
+        <rect x="32.5" y="49" width="3" height="5" rx="1.5" fill="white"/>
+      </svg>
+    </div>
+    <div class="splash-brand">SMART <span>UNION</span></div>
+    <div class="splash-tagline">Tu banco, sin papeles.</div>
+  </div>
+  <div class="splash-actions">
+    <button class="btn-primary" onclick="goTo('screen-register'); initRegister()">🪪 Registrar mi identidad</button>
+    <button class="btn-outline" onclick="loginBio()" style="color:#00B8C8">👁 Iniciar sesión con biometría facial</button>
+  </div>
+  <div class="splash-secure">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-4 9-8 10C8 21 4 17 4 12V6l8-4z"/></svg>
+    Seguridad y privacidad en cada paso.
+  </div>
+</div>
+
+<!-- ==================== REGISTER ==================== -->
+<div id="screen-register" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goTo('screen-splash')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Registro de Identidad</span>
+    <div class="topbar-right"></div>
+  </div>
+  <div class="steps-indicator">
+    <div class="step-dot active" id="sdot1">1</div>
+    <div class="step-line" id="sline1"></div>
+    <div class="step-dot" id="sdot2">2</div>
+    <div class="step-line" id="sline2"></div>
+    <div class="step-dot" id="sdot3">3</div>
+  </div>
+
+  <!-- STEP 1: Cédula (requerida, centralizada) -->
+  <div id="step1" style="display:flex;flex-direction:column;">
+    <div class="step-label">Paso 1 de 3</div>
+    <div class="step-title">Tómale una foto a tu cédula</div>
+    <div class="step-body">
+      <div class="cedula-upload-area" id="cedula-area" onclick="openCamera('cedula')">
+        <div class="upload-icon"><svg viewBox="0 0 44 44" fill="none"><rect x="6" y="10" width="32" height="24" rx="4" stroke="#00B8C8" stroke-width="2.5"/><circle cx="22" cy="22" r="6" stroke="#00B8C8" stroke-width="2.5"/><rect x="17" y="6" width="10" height="6" rx="2" fill="#00B8C8" opacity=".5"/></svg></div>
+        <div class="upload-text">Toca para fotografiar tu cédula</div>
+        <div class="upload-sub">Asegúrate que todos los datos sean visibles</div>
+        <img id="cedula-preview" style="display:none;" alt="cedula"/>
+      </div>
+      <div class="cam-btn-row">
+        <button class="cam-btn" onclick="openCamera('cedula')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Usar cámara
+        </button>
+        <button class="cam-btn" onclick="document.getElementById('file-cedula').click()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir foto
+        </button>
+      </div>
+      <input type="file" id="file-cedula" accept="image/*" onchange="handleFileSelect(this,'cedula')">
+      <div class="hint-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Tu cédula queda centralizada y no tendrás que subírla de nuevo en cada producto. Asegúrate de que se vean claros todos los datos.</span>
+      </div>
+      <button class="btn-primary" id="btn-step1" onclick="nextStep(2)" style="margin-top:auto">La foto se ve bien →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Biometría facial -->
+  <div id="step2" style="display:none;flex-direction:column;">
+    <div class="step-label">Paso 2 de 3</div>
+    <div class="step-title">Mueve tu rostro frente a la cámara</div>
+    <div class="step-body">
+      <div class="facial-area" id="facial-area">
+        <video id="facial-video" autoplay muted playsinline></video>
+        <div class="facial-overlay" id="facial-overlay">
+          <div class="face-circle" id="face-circle">
+            <svg width="70" height="70" viewBox="0 0 70 70" fill="none"><circle cx="35" cy="28" r="14" stroke="rgba(255,255,255,0.6)" stroke-width="2"/><path d="M14 60c0-11.6 9.4-21 21-21s21 9.4 21 21" stroke="rgba(255,255,255,0.6)" stroke-width="2"/></svg>
+          </div>
+          <div class="face-status" id="face-status">Iniciando cámara...</div>
+        </div>
+      </div>
+      <div style="background:var(--teal-light);border-radius:12px;padding:10px 14px;font-size:0.82rem;color:var(--navy);display:flex;align-items:center;gap:8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Estamos verificando que eres tú y no una foto.
+      </div>
+      <div class="facial-instructions">
+        <div class="instruction-item" id="instr-center">
+          <div class="check" id="chk-center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          Mira de frente a la cámara
+        </div>
+        <div class="instruction-item" id="instr-right">
+          <div class="check" id="chk-right"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          Gira tu rostro hacia la derecha
+        </div>
+        <div class="instruction-item" id="instr-left">
+          <div class="check" id="chk-left"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          Gira tu rostro hacia la izquierda
+        </div>
+        <div class="instruction-item" id="instr-blink">
+          <div class="check" id="chk-blink"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+          Parpadea dos veces
+        </div>
+      </div>
+      <button class="btn-primary" id="btn-facial" onclick="startFacialScan()" style="margin-top:auto">Iniciar escaneo facial</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Datos personales + tipo de empleo -->
+  <div id="step3" style="display:none;flex-direction:column;">
+    <div class="step-label">Paso 3 de 3</div>
+    <div class="step-title">Ingresa tus datos y tipo de empleo</div>
+    <div class="step-body" style="gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Nombre completo</label>
+        <input class="form-input" id="reg-name" type="text" placeholder="Ej: María Alejandra García">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Correo electrónico</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="tucorreo@email.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de celular</label>
+        <input class="form-input" id="reg-phone" type="tel" placeholder="300 123 4567">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de cédula <span style="color:var(--danger);">*</span></label>
+        <input class="form-input" id="reg-cedula" type="text" placeholder="1.234.567.890" required>
+        <span style="font-size:0.74rem;color:var(--gray);margin-top:2px;">Requerido — se centraliza para todos tus trámites</span>
+      </div>
+      <!-- FILTRO TIPO DE EMPLEO (funcional) -->
+      <div class="form-group">
+        <label class="form-label" style="font-size:0.9rem;margin-bottom:4px;">¿Cuál es tu tipo de empleo? <span style="color:var(--danger);">*</span></label>
+        <p style="font-size:0.76rem;color:var(--gray);margin-bottom:8px;">Según tu selección, los requisitos de cada producto se adaptarán automáticamente.</p>
+        <div class="radio-group">
+          <div class="radio-card" id="rc-empleado" onclick="selectEmployeeType('empleado')">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+            Empleado
+          </div>
+          <div class="radio-card" id="rc-independiente" onclick="selectEmployeeType('independiente')">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Independiente
+          </div>
+          <div class="radio-card" id="rc-pensionado" onclick="selectEmployeeType('pensionado')">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Pensionado
+          </div>
+        </div>
+      </div>
+      <div class="terms-row">
+        <input type="checkbox" id="terms-check">
+        <span>Acepto los <a href="#">Términos y Condiciones</a> y la <a href="#">Política de Privacidad</a>.</span>
+      </div>
+      <button class="btn-primary" onclick="finalizeRegister()" style="margin-top:8px">Finalizar registro ✓</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="step-success" style="display:none;flex-direction:column;flex:1;">
+    <div class="success-anim">
+      <div class="success-circle">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="success-title">¡Identidad verificada!</div>
+      <div class="success-sub">Tu perfil ha sido creado exitosamente.<br>Bienvenido a Smart Union.</div>
+      <button class="btn-primary" onclick="goToHome()" style="width:80%;margin-top:14px">Ir al inicio →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== HOME ==================== -->
+<div id="screen-home" class="screen">
+  <div style="flex:1;overflow-y:auto;">
+    <div class="home-header">
+      <div class="home-toprow">
+        <div class="home-logo-sm">
+          <div class="lock-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#00B8C8"><path d="M12 1C8.7 1 6 3.7 6 7v2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V11a2 2 0 0 0-2-2h-2V7c0-3.3-2.7-6-6-6zm0 2c2.2 0 4 1.8 4 4v2H8V7c0-2.2 1.8-4 4-4zm0 10a2 2 0 0 1 2 2c0 .7-.4 1.4-1 1.7V18h-2v-1.3c-.6-.3-1-1-1-1.7a2 2 0 0 1 2-2z"/></svg>
+          </div>
+          SMART UNION
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="notif-btn" onclick="toggleNotif()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <div class="notif-badge" id="notif-badge"></div>
+          </button>
+          <div class="profile-btn" id="profile-avatar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="home-greeting">¡Hola,</div>
+      <div class="home-name" id="home-name">Usuario</div>
+      <div class="verified-badge">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#68d391"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01" stroke="white" stroke-width="2" fill="none"/></svg>
+        Tu identidad está Verificada
+      </div>
+      <div class="last-verified" id="last-verified">Última verificación: hoy</div>
+    </div>
+
+    <div class="qr-btn-card" onclick="goTo('screen-vault')">
+      <div class="qr-icon-circle">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/><rect x="19" y="19" width="2" height="2"/></svg>
+      </div>
+      <div class="qr-btn-label">Generar QR por Trámite</div>
+      <div class="qr-btn-sub">Entra a un producto de tu bóveda y comparte solo esos documentos.</div>
+    </div>
+
+    <div class="home-section-title">
+      Mi Bóveda
+      <a onclick="goTo('screen-vault')">Ver todos →</a>
+    </div>
+    <div class="folders-grid" id="home-folders"></div>
+    <div style="height:20px;"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="setNav(0)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Inicio
+    </div>
+    <div class="nav-item" onclick="goTo('screen-vault');setNav(1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      Mi Bóveda
+    </div>
+    <div class="nav-item" onclick="goTo('screen-history');loadHistory();setNav(2)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Historial
+    </div>
+    <div class="nav-item" onclick="goTo('screen-profile');setNav(3)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Ajustes
+    </div>
+  </div>
+</div>
+
+<!-- ==================== QR POR PRODUCTO ==================== -->
+<div id="screen-qr" class="screen" style="background:linear-gradient(160deg,#1a2756 0%,#0d1a3a 100%);align-items:center;">
+  <div class="qr-screen-topbar">
+    <button class="qr-screen-back" onclick="cancelQR()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <div class="qr-screen-title" id="qr-screen-title">QR del Trámite</div>
+    <div style="width:36px;"></div>
+  </div>
+  <div class="qr-container">
+    <div class="qr-card" style="position:relative;">
+      <div class="qr-instruction" id="qr-instruction-text">Presenta este código en la entidad para compartir los documentos de este trámite.</div>
+      <div id="qr-canvas"></div>
+      <div class="qr-timer-wrap">
+        <div class="qr-timer-label">Este código es válido por 5 minutos</div>
+        <div class="qr-timer" id="qr-timer">05:00</div>
+        <div class="qr-timer-bar"><div class="qr-timer-fill" id="qr-bar" style="width:100%"></div></div>
+      </div>
+      <div class="qr-expired-overlay" id="qr-expired">
+        <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <div style="font-family:var(--font-main);font-weight:800;color:var(--navy);font-size:1.1rem;">QR Vencido</div>
+        <div style="font-size:0.85rem;color:var(--gray);text-align:center;">El código ha expirado. Genera uno nuevo.</div>
+        <button class="btn-primary" onclick="startQR(window._qrFolderKey)" style="width:80%">Generar nuevo QR</button>
+      </div>
+    </div>
+    <div class="qr-contents" id="qr-contents"></div>
+    <button class="qr-cancel-btn" onclick="cancelQR()">Cancelar</button>
+  </div>
+</div>
+
+<!-- ==================== VAULT ==================== -->
+<div id="screen-vault" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goTo('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Mi Bóveda</span>
+    <div class="topbar-right"></div>
+  </div>
+  <div id="vault-emptype-banner"></div>
+  <div class="vault-folder-list" id="vault-folder-list"></div>
+</div>
+
+<!-- ==================== DOCS LIST ==================== -->
+<div id="screen-docs" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goTo('screen-vault')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title" id="docs-title">Documentos</span>
+    <div class="topbar-right"></div>
+  </div>
+  <div id="docs-qr-banner"></div>
+  <div class="docs-list" id="docs-list"></div>
+</div>
+
+<!-- ==================== DOC DETAIL ==================== -->
+<div id="screen-doc-detail" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" id="doc-back-btn" onclick="goTo('screen-docs')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title" id="doc-detail-title">Documento</span>
+    <div class="topbar-right"></div>
+  </div>
+  <div class="doc-detail-body" id="doc-detail-body"></div>
+</div>
+
+<!-- ==================== HISTORY ==================== -->
+<div id="screen-history" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goTo('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Historial</span>
+    <div class="topbar-right"></div>
+  </div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<!-- ==================== PROFILE ==================== -->
+<div id="screen-profile" class="screen">
+  <div class="topbar">
+    <button class="topbar-back" onclick="goTo('screen-home')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <span class="topbar-title">Mi Perfil</span>
+    <div class="topbar-right"></div>
+  </div>
+  <div style="padding:20px 18px;display:flex;flex-direction:column;gap:14px;">
+    <div style="background:var(--white);border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);">
+      <div style="width:60px;height:60px;border-radius:50%;background:var(--teal-light);display:flex;align-items:center;justify-content:center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div>
+        <div style="font-family:var(--font-main);font-weight:800;color:var(--navy);font-size:1.05rem;" id="profile-name">Usuario</div>
+        <div style="font-size:0.82rem;color:var(--gray);" id="profile-email-display">email@email.com</div>
+        <div class="verified-badge" style="margin-top:5px;font-size:0.7rem;">✓ Verificado</div>
+      </div>
+    </div>
+
+    <!-- DATOS EDITABLES: correo y celular -->
+    <div class="settings-section-title">Datos de contacto</div>
+    <div class="settings-card">
+      <div class="settings-row" id="row-email">
+        <div class="settings-row-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 6l-10 7L2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+        </div>
+        <div class="settings-row-body">
+          <div class="settings-row-label">Correo electrónico</div>
+          <div class="settings-row-value" id="profile-email">email@email.com</div>
+          <div class="settings-edit-wrap" id="edit-email-wrap" style="display:none;">
+            <input class="form-input" id="edit-email-input" type="email" placeholder="tucorreo@email.com">
+            <div class="settings-edit-actions">
+              <button class="settings-save-btn" onclick="saveContactField('email')">Guardar</button>
+              <button class="settings-cancel-btn" onclick="cancelEditField('email')">Cancelar</button>
+            </div>
+          </div>
+        </div>
+        <button class="settings-edit-btn" id="btn-edit-email" onclick="startEditField('email')" aria-label="Editar correo electrónico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+        </button>
+      </div>
+      <div class="settings-row" id="row-phone">
+        <div class="settings-row-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </div>
+        <div class="settings-row-body">
+          <div class="settings-row-label">Número de celular</div>
+          <div class="settings-row-value" id="profile-phone">—</div>
+          <div class="settings-edit-wrap" id="edit-phone-wrap" style="display:none;">
+            <input class="form-input" id="edit-phone-input" type="tel" placeholder="300 123 4567">
+            <div class="settings-edit-actions">
+              <button class="settings-save-btn" onclick="saveContactField('phone')">Guardar</button>
+              <button class="settings-cancel-btn" onclick="cancelEditField('phone')">Cancelar</button>
+            </div>
+          </div>
+        </div>
+        <button class="settings-edit-btn" id="btn-edit-phone" onclick="startEditField('phone')" aria-label="Editar número de celular">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- DATOS DE IDENTIDAD (solo lectura) -->
+    <div class="settings-section-title">Datos de identidad <span style="font-weight:400;color:var(--gray);font-size:0.72rem;">(no editables)</span></div>
+    <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;">
+      <div style="padding:14px 18px;border-bottom:1px solid #f0f4f8;display:flex;justify-content:space-between;font-size:0.9rem;">
+        <span style="color:var(--gray);">Tipo de empleo</span>
+        <span style="font-weight:700;color:var(--navy);font-family:var(--font-main);" id="profile-emptype">—</span>
+      </div>
+      <div style="padding:14px 18px;display:flex;justify-content:space-between;font-size:0.9rem;">
+        <span style="color:var(--gray);">Cédula</span>
+        <span style="font-weight:700;color:var(--navy);font-family:var(--font-main);" id="profile-cedula">—</span>
+      </div>
+    </div>
+    <div class="hint-box" style="margin-top:-2px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>La cédula y el tipo de empleo son datos de tu identidad verificada. Si necesitas cambiarlos, contacta a soporte.</span>
+    </div>
+
+    <button class="btn-outline" onclick="logout()" style="margin-top:8px;color:var(--danger);border-color:var(--danger);">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- ==================== NOTIFICATIONS OVERLAY ==================== -->
+<div id="notif-overlay" onclick="closeNotif(event)">
+  <div class="notif-panel" onclick="event.stopPropagation()">
+    <div class="notif-panel-title">🔔 Notificaciones</div>
+    <div id="notif-list"></div>
+  </div>
+</div>
+
+<!-- ==================== CAMERA MODAL ==================== -->
+<div id="camera-modal">
+  <video id="camera-video" autoplay muted playsinline></video>
+  <canvas id="camera-canvas"></canvas>
+  <div class="camera-controls">
+    <button class="cam-close-btn" onclick="closeCamera()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button class="cam-capture-btn" id="cam-capture-btn" onclick="capturePhoto()"></button>
+    <button class="cam-gallery-btn" onclick="triggerGallery()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </button>
+  </div>
+</div>
+
+<input type="file" id="file-gallery" accept="image/*" onchange="handleGallerySelect(this)">
+<input type="file" id="file-doc-upload" accept="image/*,application/pdf" onchange="handleDocUpload(this)">
+<input type="file" id="file-camera" accept="image/*" capture="environment" onchange="handleNativePhoto(this)">
+<div id="upload-sheet" onclick="closeUploadSheet()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-title">Cargar documento</div>
+    <button class="sheet-btn" onclick="pickDoc('camera')">📷 Tomar foto con la cámara</button>
+    <button class="sheet-btn" onclick="pickDoc('gallery')">🖼️ Elegir de galería o PDF</button>
+    <button class="sheet-btn cancel" onclick="closeUploadSheet()">Cancelar</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ===================== REQUISITOS POR TIPO DE EMPLEO =====================
+// ===================== RESTRICCIONES POR TIPO DE EMPLEO =====================
+// Productos bloqueados para ciertos perfiles
+const PRODUCTOS_BLOQUEADOS = {
+  independiente: ['credito-libranza']
+};
+
+function isProductBlocked(folderKey, empType) {
+  const blocked = PRODUCTOS_BLOQUEADOS[empType] || [];
+  return blocked.includes(folderKey);
+}
+
+// Productos de tipo "crédito" que requieren sección de codeudor
+const PRODUCTOS_CON_CODEUDOR = ['credito-consumo','credito-vivienda','credito-vehiculo','credito-libranza'];
+
+// Requisitos del codeudor (igual para cualquier crédito, basados en lo indicado)
+const REQUISITOS_CODEUDOR = {
+  empleado: [
+    'Cédula de ciudadanía del codeudor',
+    'Carta laboral reciente (máx. 30-60 días) con cargo, salario, contrato y tiempo de servicio',
+    'Colillas / desprendibles de pago del último mes',
+    'Autorización de consulta en Datacrédito/Cifin'
+  ],
+  independiente: [
+    'Cédula de ciudadanía del codeudor',
+    'Certificado de Cámara de Comercio (si aplica)',
+    'Fotocopia del RUT',
+    'Extractos bancarios de los últimos 3 meses',
+    'Estar al día con aportes de parafiscales y salud'
+  ],
+  pensionado: [
+    'Cédula de ciudadanía del codeudor',
+    'Comprobantes de pago de la pensión',
+    'Declaración de Renta del último año o carta de no declarante'
+  ]
+};
+
+const REQUISITOS = {
+  'credito-consumo': {
+    empleado: [
+      'Carta laboral reciente (máx. 30-60 días) con cargo, salario, contrato y tiempo de servicio',
+      'Colillas de pago del último mes',
+      'Solicitud de vinculación al banco',
+      'Autorización consulta Datacrédito/Cifin'
+    ],
+    independiente: [
+      'Extractos bancarios (ahorros o corriente) de los últimos 3 meses',
+      'Fotocopia del RUT actualizado',
+      'Solicitud de vinculación al banco',
+      'Autorización consulta Datacrédito/Cifin'
+    ],
+    pensionado: [
+      'Comprobantes de pago de pensión (últimos 2-3)',
+      'Declaración de Renta del último año o carta de no declarante',
+      'Solicitud de vinculación al banco',
+      'Autorización consulta Datacrédito/Cifin'
+    ]
+  },
+  'credito-vivienda': {
+    empleado: [
+      'Carta laboral (máx. 30 días) con cargo, sueldo, antigüedad y tipo de contrato',
+      'Desprendibles de pago de los últimos 3 meses',
+      'Copia de la escritura pública (vivienda usada)',
+      'Certificado de Tradición y Libertad (menos de 30 días de expedición)',
+      'Recibo del último impuesto predial pago',
+      'Formulario de solicitud de crédito y asegurabilidad'
+    ],
+    independiente: [
+      'Declaración de renta del último año',
+      'Extractos bancarios de los últimos 3 meses',
+      'Fotocopia del RUT',
+      'Copia de la escritura pública (vivienda usada)',
+      'Certificado de Tradición y Libertad (menos de 30 días)',
+      'Recibo del último impuesto predial pago',
+      'Formulario de solicitud de crédito y asegurabilidad'
+    ],
+    pensionado: [
+      'Comprobantes de pago de la pensión',
+      'Declaración de Renta del último año o carta de no declarante',
+      'Copia de la escritura pública (vivienda usada)',
+      'Certificado de Tradición y Libertad (menos de 30 días)',
+      'Recibo del último impuesto predial pago',
+      'Formulario de solicitud de crédito y asegurabilidad'
+    ]
+  },
+  'credito-vehiculo': {
+    empleado: [
+      'Carta laboral reciente y desprendibles de nómina del último mes',
+      'Vehículo NUEVO: Factura proforma o cotización oficial del concesionario',
+      'Vehículo USADO: Fotocopia tarjeta de propiedad (licencia de tránsito)',
+      'Vehículo USADO: Certificado de Tradición y Libertad del vehículo',
+      'Vehículo USADO: Formulario de peritaje autorizado por el banco',
+      'Contrato de compraventa firmado por comprador y vendedor'
+    ],
+    independiente: [
+      'Extractos bancarios de los últimos 3 meses',
+      'Fotocopia del RUT actualizado',
+      'Certificado de Cámara de Comercio (si aplica)',
+      'Vehículo NUEVO: Factura proforma o cotización oficial del concesionario',
+      'Vehículo USADO: Fotocopia tarjeta de propiedad, Certificado de Tradición y peritaje',
+      'Contrato de compraventa firmado'
+    ],
+    pensionado: [
+      'Comprobantes de pago de la pensión',
+      'Declaración de Renta del último año o carta de no declarante',
+      'Vehículo NUEVO: Factura proforma o cotización oficial del concesionario',
+      'Vehículo USADO: Fotocopia tarjeta de propiedad, Certificado de Tradición y peritaje',
+      'Contrato de compraventa firmado'
+    ]
+  },
+  'credito-libranza': {
+    empleado: [
+      'Últimos 2 o 3 desprendibles de pago de nómina',
+      'Formato de Visación: autorización de descuento directo firmado y sellado por RRHH/pagaduría'
+    ],
+    independiente: [
+      'No aplica (libranza es exclusiva de empleados y pensionados con descuento por nómina/pensión)'
+    ],
+    pensionado: [
+      'Últimos 2 o 3 comprobantes de pago de la pensión',
+      'Formato de Visación: autorización de descuento firmado y aprobado por la entidad pagadora'
+    ]
+  },
+  'cuenta-ahorros': {
+    empleado: [
+      'Tu cédula (ya registrada y centralizada)',
+      'Carta de presentación de la empresa para apertura de cuenta de nómina (costo $0 manejo)'
+    ],
+    independiente: [
+      'Tu cédula (ya registrada y centralizada)',
+      'Solo necesitas la cédula para cuenta de ahorros común'
+    ],
+    pensionado: [
+      'Tu cédula (ya registrada y centralizada)',
+      'Solo necesitas la cédula para cuenta de ahorros común'
+    ]
+  },
+  'cdp': {
+    empleado: [
+      'Tu cédula (ya registrada y centralizada)',
+      'Declaración de origen de fondos (firmada bajo gravedad de juramento)',
+      'Copia de declaración de renta (solo si la inversión supera 50 millones)'
+    ],
+    independiente: [
+      'Tu cédula (ya registrada y centralizada)',
+      'Declaración de origen de fondos',
+      'Copia de declaración de renta (solo si la inversión supera 50 millones)',
+      'Fotocopia del RUT'
+    ],
+    pensionado: [
+      'Tu cédula (ya registrada y centralizada)',
+      'Declaración de origen de fondos',
+      'Copia de declaración de renta del último año (si aplica)'
+    ]
+  }
+};
+
+// ===================== VAULT STRUCTURE POR TIPO =====================
+function getVaultDocs(empType) {
+  const et = empType || 'empleado';
+  const vault = {
+    'credito-consumo': {
+      name: 'Crédito de Consumo',
+      icon: '💳',
+      color: '#ed8936',
+      docs: []
+    },
+    'credito-vivienda': {
+      name: 'Crédito de Vivienda',
+      icon: '🏠',
+      color: '#667eea',
+      docs: []
+    },
+    'credito-vehiculo': {
+      name: 'Crédito de Vehículo',
+      icon: '🚗',
+      color: '#38b2ac',
+      docs: []
+    },
+    'credito-libranza': {
+      name: 'Crédito de Libranza',
+      icon: '📑',
+      color: '#e53e3e',
+      docs: []
+    },
+    'cuenta-ahorros': {
+      name: 'Cuenta de Ahorros / Nómina',
+      icon: '💰',
+      color: '#48bb78',
+      docs: []
+    },
+    'cdp': {
+      name: 'CDT / Inversión Digital',
+      icon: '📈',
+      color: '#9f7aea',
+      docs: []
+    }
+  };
+
+  // Documentos base para todos (cédula centralizada, NO repetida en productos)
+  const docsPerProduct = {
+    'credito-consumo': {
+      empleado: [
+        { id: 'cc-laboral', name: 'Carta laboral reciente', required: true, hasExpiry: true },
+        { id: 'cc-nomina', name: 'Colillas de pago último mes', required: true, hasExpiry: true },
+        { id: 'cc-solicitud', name: 'Solicitud de vinculación', required: true },
+        { id: 'cc-datacredito', name: 'Autorización Datacrédito/Cifin', required: true },
+      ],
+      independiente: [
+        { id: 'cc-extractos', name: 'Extractos bancarios 3 meses', required: true, hasExpiry: true },
+        { id: 'cc-rut', name: 'Fotocopia RUT actualizado', required: true, hasExpiry: true },
+        { id: 'cc-solicitud', name: 'Solicitud de vinculación', required: true },
+        { id: 'cc-datacredito', name: 'Autorización Datacrédito/Cifin', required: true },
+      ],
+      pensionado: [
+        { id: 'cc-pension', name: 'Comprobantes de pago pensión', required: true, hasExpiry: true },
+        { id: 'cc-renta', name: 'Declaración de Renta / carta no declarante', required: true, hasExpiry: true },
+        { id: 'cc-solicitud', name: 'Solicitud de vinculación', required: true },
+        { id: 'cc-datacredito', name: 'Autorización Datacrédito/Cifin', required: true },
+      ]
+    },
+    'credito-vivienda': {
+      empleado: [
+        { id: 'cv-laboral', name: 'Carta laboral (máx. 30 días)', required: true, hasExpiry: true },
+        { id: 'cv-desprendibles', name: 'Desprendibles nómina 3 meses', required: true, hasExpiry: true },
+        { id: 'cv-escritura', name: 'Copia escritura pública', required: true },
+        { id: 'cv-tradicion', name: 'Certificado Tradición y Libertad', required: true, hasExpiry: true },
+        { id: 'cv-predial', name: 'Recibo impuesto predial pago', required: true, hasExpiry: true },
+        { id: 'cv-formularios', name: 'Solicitud crédito y asegurabilidad', required: true },
+      ],
+      independiente: [
+        { id: 'cv-renta', name: 'Declaración de Renta último año', required: true, hasExpiry: true },
+        { id: 'cv-extractos', name: 'Extractos bancarios 3 meses', required: true, hasExpiry: true },
+        { id: 'cv-rut', name: 'Fotocopia RUT', required: true },
+        { id: 'cv-escritura', name: 'Copia escritura pública', required: true },
+        { id: 'cv-tradicion', name: 'Certificado Tradición y Libertad', required: true, hasExpiry: true },
+        { id: 'cv-predial', name: 'Recibo impuesto predial pago', required: true, hasExpiry: true },
+        { id: 'cv-formularios', name: 'Solicitud crédito y asegurabilidad', required: true },
+      ],
+      pensionado: [
+        { id: 'cv-pension', name: 'Comprobantes pago pensión', required: true, hasExpiry: true },
+        { id: 'cv-renta', name: 'Declaración de Renta / carta no declarante', required: true, hasExpiry: true },
+        { id: 'cv-escritura', name: 'Copia escritura pública', required: true },
+        { id: 'cv-tradicion', name: 'Certificado Tradición y Libertad', required: true, hasExpiry: true },
+        { id: 'cv-predial', name: 'Recibo impuesto predial pago', required: true, hasExpiry: true },
+        { id: 'cv-formularios', name: 'Solicitud crédito y asegurabilidad', required: true },
+      ]
+    },
+    'credito-vehiculo': {
+      empleado: [
+        { id: 'cveh-laboral', name: 'Carta laboral y desprendibles', required: true, hasExpiry: true },
+        { id: 'cveh-cotizacion', name: 'Factura proforma / Cotización (veh. nuevo)', required: false },
+        { id: 'cveh-tarjeta', name: 'Tarjeta de propiedad (veh. usado)', required: false },
+        { id: 'cveh-tradicion', name: 'Certificado Tradición vehículo (usado)', required: false, hasExpiry: true },
+        { id: 'cveh-peritaje', name: 'Formulario de peritaje (usado)', required: false },
+        { id: 'cveh-compraventa', name: 'Contrato de compraventa', required: false },
+      ],
+      independiente: [
+        { id: 'cveh-extractos', name: 'Extractos bancarios 3 meses', required: true, hasExpiry: true },
+        { id: 'cveh-rut', name: 'Fotocopia RUT actualizado', required: true },
+        { id: 'cveh-camcom', name: 'Certificado Cámara de Comercio', required: false, hasExpiry: true },
+        { id: 'cveh-cotizacion', name: 'Factura proforma / Cotización (veh. nuevo)', required: false },
+        { id: 'cveh-tarjeta', name: 'Tarjeta de propiedad / Tradición / Peritaje (usado)', required: false },
+        { id: 'cveh-compraventa', name: 'Contrato de compraventa', required: false },
+      ],
+      pensionado: [
+        { id: 'cveh-pension', name: 'Comprobantes pago pensión', required: true, hasExpiry: true },
+        { id: 'cveh-renta', name: 'Declaración de Renta / carta no declarante', required: true, hasExpiry: true },
+        { id: 'cveh-cotizacion', name: 'Factura proforma / Cotización (veh. nuevo)', required: false },
+        { id: 'cveh-tarjeta', name: 'Tarjeta de propiedad / Tradición / Peritaje (usado)', required: false },
+        { id: 'cveh-compraventa', name: 'Contrato de compraventa', required: false },
+      ]
+    },
+    'credito-libranza': {
+      empleado: [
+        { id: 'cl-desprendibles', name: 'Desprendibles nómina (2-3 últimos)', required: true, hasExpiry: true },
+        { id: 'cl-visacion', name: 'Formato de Visación (descuento autorizado por RRHH)', required: true },
+      ],
+      independiente: [
+        { id: 'cl-noaplica', name: 'Libranza no aplica para independientes', required: false },
+      ],
+      pensionado: [
+        { id: 'cl-pension', name: 'Comprobantes pago pensión (2-3 últimos)', required: true, hasExpiry: true },
+        { id: 'cl-visacion', name: 'Formato de Visación (autorizado por entidad pagadora)', required: true },
+      ]
+    },
+    'cuenta-ahorros': {
+      empleado: [
+        { id: 'ca-presentacion', name: 'Carta presentación empresa (cuenta nómina $0 manejo)', required: false },
+      ],
+      independiente: [
+        { id: 'ca-info', name: 'Solo cédula para cuenta ahorros (ya centralizada)', required: false },
+      ],
+      pensionado: [
+        { id: 'ca-info', name: 'Solo cédula para cuenta ahorros (ya centralizada)', required: false },
+      ]
+    },
+    'cdp': {
+      empleado: [
+        { id: 'cdt-origen', name: 'Declaración de origen de fondos', required: true },
+        { id: 'cdt-renta', name: 'Declaración de Renta (si inversión >50M)', required: false, hasExpiry: true },
+      ],
+      independiente: [
+        { id: 'cdt-origen', name: 'Declaración de origen de fondos', required: true },
+        { id: 'cdt-renta', name: 'Declaración de Renta (si inversión >50M)', required: false, hasExpiry: true },
+        { id: 'cdt-rut', name: 'Fotocopia RUT', required: true },
+      ],
+      pensionado: [
+        { id: 'cdt-origen', name: 'Declaración de origen de fondos', required: true },
+        { id: 'cdt-renta', name: 'Declaración de Renta del último año', required: false, hasExpiry: true },
+      ]
+    }
+  };
+
+  for (const key of Object.keys(vault)) {
+    const productDocs = docsPerProduct[key];
+    if (productDocs && productDocs[et]) {
+      vault[key].docs = productDocs[et];
+    }
+  }
+  return vault;
+}
+
+// ===================== STATE =====================
+let appState = {
+  user: null,
+  vault: getVaultDocs('empleado'),
+  documents: {},
+  history: [],
+  notifications: []
+};
+
+// ===================== INIT =====================
+function init() {
+  const saved = localStorage.getItem('smartunion_data');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      appState.user = parsed.user || null;
+      appState.documents = parsed.documents || {};
+      appState.history = parsed.history || [];
+      appState.notifications = parsed.notifications || [];
+      if (appState.user) {
+        appState.vault = getVaultDocs(appState.user.employeeType);
+      }
+    } catch(e) {}
+  }
+  if (appState.user) goToHome();
+  checkDocumentAlerts();
+}
+
+function save() {
+  localStorage.setItem('smartunion_data', JSON.stringify({
+    user: appState.user,
+    documents: appState.documents,
+    history: appState.history,
+    notifications: appState.notifications
+  }));
+}
+
+// ===================== NAVIGATION =====================
+let currentScreen = 'screen-splash';
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  currentScreen = id;
+  if (id === 'screen-vault') renderVault();
+  if (id === 'screen-home') { renderHome(); renderHomeFolders(); }
+}
+
+function goToHome() {
+  goTo('screen-home');
+  renderHome();
+  renderHomeFolders();
+  checkDocumentAlerts();
+}
+
+function setNav(idx) {
+  document.querySelectorAll('.nav-item').forEach((el,i) => el.classList.toggle('active', i===idx));
+}
+
+function logout() {
+  if (confirm('¿Deseas cerrar sesión?')) {
+    appState.user = null;
+    save();
+    goTo('screen-splash');
+  }
+}
+
+// ===================== REGISTER =====================
+let currentStep = 1;
+let cedulaImageData = null;
+let facialDone = false;
+let selectedEmployeeType = null;
+let cameraTarget = null;
+let cameraStream = null;
+
+function initRegister() {
+  currentStep = 1;
+  cedulaImageData = null;
+  facialDone = false;
+  selectedEmployeeType = null;
+  document.getElementById('step1').style.display = 'flex';
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step-success').style.display = 'none';
+  updateStepUI(1);
+  document.getElementById('btn-facial').textContent = 'Iniciar escaneo facial';
+  document.getElementById('btn-facial').disabled = false;
+  ['instr-center','instr-right','instr-left','instr-blink'].forEach(id => {
+    document.getElementById(id).classList.remove('done');
+  });
+}
+
+function updateStepUI(step) {
+  for (let i=1;i<=3;i++) {
+    const dot = document.getElementById('sdot'+i);
+    dot.className = 'step-dot' + (i===step?' active':(i<step?' done':''));
+  }
+  for (let i=1;i<=2;i++) {
+    document.getElementById('sline'+i).className = 'step-line' + (i<step?' done':'');
+  }
+}
+
+function nextStep(step) {
+  if (step === 2) {
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display = 'flex';
+    updateStepUI(2);
+    startFacialCamera();
+  } else if (step === 3) {
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'flex';
+    updateStepUI(3);
+  }
+}
+
+function selectEmployeeType(type) {
+  selectedEmployeeType = type;
+  ['empleado','independiente','pensionado'].forEach(t => {
+    document.getElementById('rc-'+t).classList.toggle('selected', t===type);
+  });
+}
+
+function finalizeRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const cedula = document.getElementById('reg-cedula').value.trim();
+  const terms = document.getElementById('terms-check').checked;
+
+  if (!name) { toast('Por favor ingresa tu nombre completo'); return; }
+  if (!email || !email.includes('@')) { toast('Ingresa un correo válido'); return; }
+  if (!phone) { toast('Ingresa tu número de celular'); return; }
+  if (!cedula) { toast('La cédula es requerida'); return; }
+  if (!selectedEmployeeType) { toast('Selecciona tu tipo de empleo'); return; }
+  if (!terms) { toast('Debes aceptar los términos y condiciones'); return; }
+
+  appState.user = {
+    name, email, phone, cedula,
+    employeeType: selectedEmployeeType,
+    verifiedDate: new Date().toLocaleDateString('es-CO'),
+    cedulaImage: cedulaImageData
+  };
+
+  // Actualizar bóveda según tipo de empleo
+  appState.vault = getVaultDocs(selectedEmployeeType);
+  // Guardar la cédula en el estado de documentos (centralizada)
+  appState.documents['cedula-global'] = {
+    uploaded: true,
+    imageData: cedulaImageData,
+    uploadDate: new Date().toLocaleDateString('es-CO')
+  };
+
+  addHistory('Registro completado', 'Identidad verificada exitosamente', 'doc');
+  save();
+
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step-success').style.display = 'flex';
+}
+
+// ===================== FACIAL SCAN (SIMULATED) =====================
+function startFacialCamera() {
+  const video = document.getElementById('facial-video');
+  (navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } }) : Promise.reject())
+    .then(stream => {
+      video.srcObject = stream;
+      video.style.display = 'block';
+      video.play().catch(() => {});
+      cameraStream = stream;
+      document.getElementById('face-status').textContent = 'Centra tu rostro en el círculo';
+    })
+    .catch(() => {
+      document.getElementById('face-status').textContent = 'Cámara no disponible - modo simulación';
+    });
+}
+
+let facialInterval = null;
+function startFacialScan() {
+  if (facialDone) { nextStep(3); return; }
+  const btn = document.getElementById('btn-facial');
+  btn.disabled = true;
+  const steps = [
+    { id: 'instr-center', msg: 'Mirando de frente...', delay: 1200 },
+    { id: 'instr-right', msg: 'Girando hacia la derecha...', delay: 2400 },
+    { id: 'instr-left', msg: 'Girando hacia la izquierda...', delay: 3600 },
+    { id: 'instr-blink', msg: 'Detectando parpadeo...', delay: 4800 },
+  ];
+  steps.forEach(s => {
+    setTimeout(() => {
+      document.getElementById(s.id).classList.add('done');
+      document.getElementById('face-status').textContent = s.msg;
+    }, s.delay);
+  });
+  setTimeout(() => {
+    document.getElementById('face-status').textContent = '✅ Verificación facial completada';
+    facialDone = true;
+    btn.textContent = 'Continuar al paso 3 →';
+    btn.disabled = false;
+    btn.onclick = () => {
+      stopStream(document.getElementById('facial-video'));
+      nextStep(3);
+    };
+  }, 6000);
+}
+
+// ===================== CAMERA =====================
+function openCamera(target) {
+  cameraTarget = target;
+  const hasApi = navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.isSecureContext;
+  if (!hasApi) { nativeCapture(); return; }
+  const modal = document.getElementById('camera-modal');
+  const video = document.getElementById('camera-video');
+  stopCameraStream();
+  modal.classList.add('show');
+  const facing = target === 'cedula' || target === 'doc-upload' ? 'environment' : 'user';
+  const get = c => navigator.mediaDevices.getUserMedia(c);
+  get({ video: { facingMode: { ideal: facing } }, audio: false })
+    .catch(() => get({ video: true, audio: false }))
+    .then(stream => {
+      cameraStream = stream;
+      video.setAttribute('playsinline', '');
+      video.muted = true;
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    })
+    .catch(() => {
+      closeCamera();
+      toast('Abriendo la cámara del dispositivo…');
+      nativeCapture();
+    });
+}
+
+function stopCameraStream() {
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  stopStream(document.getElementById('camera-video'));
+}
+
+function closeCamera() {
+  document.getElementById('camera-modal').classList.remove('show');
+  stopCameraStream();
+}
+
+// Respaldo: abre la cámara nativa del celular (funciona sin HTTPS)
+function nativeCapture() {
+  const i = document.getElementById('file-camera');
+  i.value = '';
+  i.click();
+}
+
+function handleNativePhoto(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => handleCapturedImage(e.target.result);
+  reader.readAsDataURL(input.files[0]);
+}
+
+function capturePhoto() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  if (!video.videoWidth) { toast('La cámara aún se está iniciando'); return; }
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+  closeCamera();
+  handleCapturedImage(dataURL);
+}
+
+function triggerGallery() {
+  document.getElementById('file-gallery').click();
+}
+
+function handleGallerySelect(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => { handleCapturedImage(e.target.result); };
+  reader.readAsDataURL(input.files[0]);
+  closeCamera();
+  input.value = '';
+}
+
+function handleCapturedImage(dataURL) {
+  if (cameraTarget === 'cedula') {
+    cedulaImageData = dataURL;
+    const preview = document.getElementById('cedula-preview');
+    preview.src = dataURL;
+    preview.style.display = 'block';
+    const area = document.getElementById('cedula-area');
+    area.querySelector('.upload-icon').style.display = 'none';
+    area.querySelector('.upload-text').style.display = 'none';
+    area.querySelector('.upload-sub').style.display = 'none';
+    toast('📷 Cédula fotografiada correctamente');
+  } else if (cameraTarget === 'doc-upload') {
+    finalizeDocUpload(dataURL);
+  }
+}
+
+function handleFileSelect(input, target) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (target === 'cedula') {
+      cedulaImageData = e.target.result;
+      const preview = document.getElementById('cedula-preview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('cedula-area').querySelector('.upload-icon').style.display = 'none';
+      document.getElementById('cedula-area').querySelector('.upload-text').style.display = 'none';
+      document.getElementById('cedula-area').querySelector('.upload-sub').style.display = 'none';
+      toast('✅ Cédula cargada correctamente');
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function stopStream(video) {
+  if (video && video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
+}
+
+// ===================== HOME =====================
+function renderHome() {
+  if (!appState.user) return;
+  document.getElementById('home-name').textContent = appState.user.name + '!';
+  document.getElementById('last-verified').textContent = 'Última verificación: ' + appState.user.verifiedDate;
+  document.getElementById('profile-name').textContent = appState.user.name;
+  document.getElementById('profile-email').textContent = appState.user.email;
+  document.getElementById('profile-email-display').textContent = appState.user.email;
+  document.getElementById('profile-cedula').textContent = appState.user.cedula || '—';
+  document.getElementById('profile-phone').textContent = appState.user.phone || '—';
+  const empLabels = { empleado: '👔 Empleado', independiente: '🧑‍💻 Independiente', pensionado: '🏅 Pensionado' };
+  document.getElementById('profile-emptype').textContent = empLabels[appState.user.employeeType] || appState.user.employeeType || '—';
+}
+
+// ===================== EDICIÓN DE DATOS DE CONTACTO (Ajustes) =====================
+function startEditField(field) {
+  // field: 'email' | 'phone'
+  const valueEl = document.getElementById('profile-' + field);
+  const wrap = document.getElementById('edit-' + field + '-wrap');
+  const input = document.getElementById('edit-' + field + '-input');
+  const editBtn = document.getElementById('btn-edit-' + field);
+
+  valueEl.style.display = 'none';
+  editBtn.style.display = 'none';
+  wrap.style.display = 'flex';
+  input.value = appState.user[field] || '';
+  input.focus();
+}
+
+function cancelEditField(field) {
+  const valueEl = document.getElementById('profile-' + field);
+  const wrap = document.getElementById('edit-' + field + '-wrap');
+  const editBtn = document.getElementById('btn-edit-' + field);
+  wrap.style.display = 'none';
+  valueEl.style.display = '';
+  editBtn.style.display = '';
+}
+
+function saveContactField(field) {
+  const input = document.getElementById('edit-' + field + '-input');
+  const value = input.value.trim();
+
+  if (field === 'email') {
+    if (!value || !value.includes('@') || !value.includes('.')) {
+      toast('Ingresa un correo electrónico válido');
+      return;
+    }
+  } else if (field === 'phone') {
+    const digits = value.replace(/\D/g,'');
+    if (digits.length < 7) {
+      toast('Ingresa un número de celular válido');
+      return;
+    }
+  }
+
+  appState.user[field] = value;
+  save();
+  addHistory('Datos actualizados', field === 'email' ? 'Correo electrónico actualizado' : 'Número de celular actualizado', 'doc');
+
+  cancelEditField(field);
+  renderHome();
+  toast(field === 'email' ? '✅ Correo actualizado correctamente' : '✅ Celular actualizado correctamente');
+}
+
+function renderHomeFolders() {
+  const grid = document.getElementById('home-folders');
+  const folders = Object.entries(appState.vault);
+  const colors = ['#fff0e0','#e0edff','#e0fff8','#f5e0ff','#d4f4e2','#e0f8fb'];
+  const et = appState.user?.employeeType || 'empleado';
+  grid.innerHTML = folders.slice(0,6).map(([key, folder], i) => {
+    const blocked = isProductBlocked(key, et);
+    const hasAlert = !blocked && checkFolderAlert(key);
+    const uploaded = blocked ? 0 : countUploaded(key);
+    const total = folder.docs.length;
+    return `
+    <div class="folder-card ${hasAlert?'has-alert':''}" style="${blocked?'opacity:0.5;':''}" onclick="openVaultFolder('${key}')">
+      <div class="folder-icon" style="background:${colors[i%colors.length]}">
+        <span style="font-size:1.4rem;">${blocked?'🔒':folder.icon}</span>
+      </div>
+      <div class="folder-name">${folder.name}</div>
+      <div class="folder-sub">${blocked?'No disponible':uploaded+'/'+total+' docs'}</div>
+      <div class="folder-alert-dot ${hasAlert?'show':''}"></div>
+    </div>`;
+  }).join('');
+}
+
+function countUploaded(folderKey) {
+  const folder = appState.vault[folderKey];
+  return folder.docs.filter(d => appState.documents[d.id]?.uploaded).length;
+}
+
+function checkFolderAlert(folderKey) {
+  const folder = appState.vault[folderKey];
+  return folder.docs.some(d => {
+    const doc = appState.documents[d.id];
+    if (!doc || !doc.expiry) return false;
+    return getDaysUntilExpiry(doc.expiry) <= 3 && getDaysUntilExpiry(doc.expiry) >= 0;
+  });
+}
+
+// ===================== VAULT =====================
+function renderVault() {
+  // Banner tipo de empleo
+  const banner = document.getElementById('vault-emptype-banner');
+  if (appState.user) {
+    const et = appState.user.employeeType || 'empleado';
+    const labels = { empleado: '👔 Perfil: Empleado', independiente: '🧑‍💻 Perfil: Independiente', pensionado: '🏅 Perfil: Pensionado' };
+    const desc = { empleado: 'Los requisitos están adaptados para tu tipo de vinculación laboral.', independiente: 'Los requisitos están adaptados para trabajadores independientes.', pensionado: 'Los requisitos están adaptados para pensionados.' };
+    banner.className = 'vault-emptype-banner ' + et;
+    banner.innerHTML = `<span style="font-size:1.1rem;">${labels[et]?.split(' ')[0]}</span><div><div>${labels[et]}</div><div style="font-size:0.72rem;font-weight:400;margin-top:2px;">${desc[et]}</div></div>`;
+  }
+
+  const list = document.getElementById('vault-folder-list');
+  const et = appState.user?.employeeType || 'empleado';
+  list.innerHTML = Object.entries(appState.vault).map(([key, folder]) => {
+    const blocked = isProductBlocked(key, et);
+    const hasAlert = !blocked && checkFolderAlert(key);
+    const uploaded = blocked ? 0 : countUploaded(key);
+    const total = folder.docs.length;
+    let alertMsg = hasAlert ? `<div class="vault-folder-alert">⚠ Documento próximo a vencer</div>` : '';
+    let blockedMsg = blocked ? `<div class="vault-folder-alert" style="color:var(--gray);">🔒 No disponible para tu perfil</div>` : '';
+    return `
+    <div class="vault-folder-item ${hasAlert?'has-alert':''}" style="${blocked?'opacity:0.55;':''}" onclick="openVaultFolder('${key}')">
+      <div class="vault-folder-icon" style="background:#f0f4ff;font-size:1.5rem;">${blocked?'🔒':folder.icon}</div>
+      <div class="vault-folder-info">
+        <div class="vault-folder-name">${folder.name}</div>
+        <div class="vault-folder-sub">${blocked?'Producto exclusivo para empleados y pensionados':uploaded+' de '+total+' documentos cargados'}</div>
+        ${alertMsg}${blockedMsg}
+      </div>
+      <div class="vault-folder-arrow">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openVaultFolder(folderKey) {
+  const folder = appState.vault[folderKey];
+  document.getElementById('docs-title').textContent = folder.name;
+  window._currentFolder = folderKey;
+  goTo('screen-docs');
+  renderDocsList(folderKey);
+}
+
+// ===================== DOCUMENTS =====================
+function renderDocsList(folderKey) {
+  const folder = appState.vault[folderKey];
+  const list = document.getElementById('docs-list');
+  const qrBanner = document.getElementById('docs-qr-banner');
+  const et = appState.user?.employeeType || 'empleado';
+
+  // ---- Bloqueo por perfil ----
+  if (isProductBlocked(folderKey, et)) {
+    qrBanner.innerHTML = '';
+    list.innerHTML = `
+    <div class="product-blocked-banner">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div>
+        <div class="product-blocked-title">No disponible para tu perfil</div>
+        <div class="product-blocked-text">El Crédito de Libranza solo está disponible para empleados y pensionados, ya que requiere descuento directo de nómina o mesada pensional. Si cambias tu tipo de empleo en tu perfil podrás acceder a este producto.</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  // ---- Banner QR del producto (solo si hay al menos un documento cargado) ----
+  const uploadedCount = countUploaded(folderKey);
+  if (uploadedCount > 0) {
+    qrBanner.innerHTML = `
+    <div class="product-qr-banner" onclick="openProductQR('${folderKey}')">
+      <div class="qr-mini-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/><rect x="19" y="19" width="2" height="2"/></svg>
+      </div>
+      <div class="product-qr-banner-text">
+        <div class="product-qr-banner-title">Generar QR de ${folder.name}</div>
+        <div class="product-qr-banner-sub">Comparte solo los documentos de este trámite</div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="opacity:0.6;"><path d="M9 18l6-6-6-6"/></svg>
+    </div>`;
+  } else {
+    qrBanner.innerHTML = `<div class="product-qr-banner" style="opacity:.75;cursor:default;"><div class="product-qr-banner-text"><div class="product-qr-banner-title">QR del trámite</div><div class="product-qr-banner-sub">Carga al menos un documento para generar tu QR</div></div></div>`;
+  }
+
+  // ---- Info box con requisitos según tipo de empleo ----
+  const reqs = REQUISITOS[folderKey]?.[et] || [];
+  const reqBoxHtml = reqs.length > 0 ? `
+    <div class="req-info-box" style="margin-bottom:4px;">
+      <div class="req-info-box-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00B8C8" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Requisitos para tu perfil (${et.charAt(0).toUpperCase()+et.slice(1)})
+      </div>
+      <ul class="req-info-list">${reqs.map(r=>`<li>${r}</li>`).join('')}</ul>
+    </div>` : '';
+
+  // ---- Documentos del producto ----
+  const docsHtml = folder.docs.map(doc => {
+    const saved = appState.documents[doc.id] || {};
+    const uploaded = saved.uploaded;
+    const expiry = saved.expiry;
+    const daysLeft = expiry ? getDaysUntilExpiry(expiry) : null;
+    const isAlert = daysLeft !== null && daysLeft <= 3 && daysLeft >= 0;
+    const isExpired = daysLeft !== null && daysLeft < 0;
+
+    let statusHtml = '';
+    let statusClass = '';
+    if (uploaded && !isAlert && !isExpired) {
+      statusHtml = `<div class="doc-status ok">✓ Cargado${expiry ? ' · Vence: '+expiry : ''}</div>`;
+      statusClass = 'uploaded';
+    } else if (uploaded && isAlert) {
+      statusHtml = `<div class="doc-status alert">⚠ Vence en ${daysLeft} día${daysLeft===1?'':'s'}</div>`;
+      statusClass = 'has-alert';
+    } else if (uploaded && isExpired) {
+      statusHtml = `<div class="doc-status alert">❌ Vencido — actualiza</div>`;
+      statusClass = 'has-alert';
+    } else {
+      statusHtml = `<div class="doc-status pending">${doc.required?'Requerido':'Opcional'} · Sin cargar</div>`;
+    }
+
+    const docIcons = { cedula:'🪪', laboral:'💼', ingresos:'📊', domicilio:'📮', extractos:'🏦', promesa:'📋', declaracion:'📄', nomina:'💵', pension:'🏅', rut:'📝', renta:'📋', desprendibles:'💵', visacion:'✅', origen:'🔐', solicitud:'📋', datacredito:'🔍', presentacion:'📩', cotizacion:'🏷️', escritura:'🏛️', tradicion:'📜', predial:'🏠', formularios:'📋', peritaje:'🔧', compraventa:'🤝', camcom:'🏢', tarjeta:'🪪', info:'ℹ️', codeudor:'🤝' };
+    const iconKey = Object.keys(docIcons).find(k => doc.id.includes(k)) || 'doc';
+    const icon = docIcons[iconKey] || '📄';
+
+    return `
+    <div class="doc-item ${statusClass}" onclick="openDocDetail('${doc.id}','${folderKey}')">
+      <div class="doc-icon" style="background:#f4f6fa;font-size:1.3rem;">${icon}</div>
+      <div class="doc-info">
+        <div class="doc-name">${doc.name}</div>
+        ${statusHtml}
+      </div>
+      <button class="doc-upload-btn" onclick="event.stopPropagation();openDocUpload('${doc.id}','${folderKey}')">
+        ${uploaded ? '↻ Actualizar' : '+ Subir'}
+      </button>
+    </div>`;
+  }).join('');
+
+  // ---- Sección de Codeudor (solo en productos de crédito) ----
+  let codeudorHtml = '';
+  if (PRODUCTOS_CON_CODEUDOR.includes(folderKey)) {
+    codeudorHtml = renderCodeudorSection(folderKey, et);
+  }
+
+  list.innerHTML = reqBoxHtml + docsHtml + codeudorHtml;
+}
+
+// ===================== CODEUDOR =====================
+function renderCodeudorSection(folderKey, et) {
+  const codeudorReqs = REQUISITOS_CODEUDOR[et] || [];
+  const isOpen = window._codeudorOpen && window._codeudorOpen[folderKey];
+  const codeudorDocId = 'codeudor-' + folderKey;
+  const saved = appState.documents[codeudorDocId] || {};
+
+  return `
+  <div class="codeudor-section">
+    <div class="codeudor-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a2756" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Codeudor (opcional)
+    </div>
+    <div class="codeudor-sub">Si tu trámite requiere o deseas incluir un codeudor, estos son los documentos que debe presentar según su tipo de empleo.</div>
+    ${isOpen ? `
+      <ul class="req-info-list">${codeudorReqs.map(r=>`<li>${r}</li>`).join('')}</ul>
+      <div class="doc-item ${saved.uploaded?'uploaded':''}" style="margin-top:4px;" onclick="openDocDetail('${codeudorDocId}','${folderKey}')">
+        <div class="doc-icon" style="background:#f4f6fa;font-size:1.3rem;">🤝</div>
+        <div class="doc-info">
+          <div class="doc-name">Documentos del Codeudor</div>
+          <div class="doc-status ${saved.uploaded?'ok':'pending'}">${saved.uploaded ? '✓ Cargado' : 'Opcional · Sin cargar'}</div>
+        </div>
+        <button class="doc-upload-btn" onclick="event.stopPropagation();openDocUpload('${codeudorDocId}','${folderKey}')">
+          ${saved.uploaded ? '↻ Actualizar' : '+ Subir'}
+        </button>
+      </div>
+      <button class="codeudor-toggle-btn" onclick="toggleCodeudor('${folderKey}')">Ocultar sección de codeudor</button>
+    ` : `
+      <button class="codeudor-toggle-btn" onclick="toggleCodeudor('${folderKey}')">+ Añadir codeudor a este trámite</button>
+    `}
+  </div>`;
+}
+
+function toggleCodeudor(folderKey) {
+  if (!window._codeudorOpen) window._codeudorOpen = {};
+  window._codeudorOpen[folderKey] = !window._codeudorOpen[folderKey];
+  renderDocsList(folderKey);
+}
+
+let _currentDocId = null;
+let _currentDocFolder = null;
+
+function openDocDetail(docId, folderKey) {
+  _currentDocId = docId;
+  _currentDocFolder = folderKey;
+  const folder = appState.vault[folderKey];
+  // Soporta el documento virtual "Documentos del Codeudor" que no vive en folder.docs
+  const isCodeudorDoc = docId.startsWith('codeudor-');
+  const doc = isCodeudorDoc
+    ? { id: docId, name: 'Documentos del Codeudor', required: false, hasExpiry: false }
+    : folder.docs.find(d => d.id === docId);
+  const saved = appState.documents[docId] || {};
+  const expiry = saved.expiry || '';
+  const daysLeft = expiry ? getDaysUntilExpiry(expiry) : null;
+
+  document.getElementById('doc-detail-title').textContent = doc.name;
+  document.getElementById('doc-back-btn').onclick = () => { goTo('screen-docs'); renderDocsList(folderKey); };
+
+  let alertBanner = '';
+  if (daysLeft !== null && daysLeft <= 3 && daysLeft >= 0) {
+    alertBanner = `<div class="alert-banner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>⚠️ Vence en <strong>${daysLeft} día${daysLeft===1?'':'s'}</strong>. Actualízalo pronto.</div>`;
+  } else if (daysLeft !== null && daysLeft < 0) {
+    alertBanner = `<div class="alert-banner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>❌ Documento <strong>vencido</strong>. Actualízalo.</div>`;
+  }
+
+  const previewContent = saved.imageData
+    ? `<img src="${saved.imageData}" alt="doc" style="max-height:220px;width:100%;object-fit:contain;">`
+    : `<div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px;color:var(--gray);"><span style="font-size:3rem;">📄</span><span style="font-size:0.85rem;">Sin documento cargado</span></div>`;
+
+  const expirySection = doc.hasExpiry ? `
+    <div class="expiry-input-wrap">
+      <label class="expiry-label">Fecha de vencimiento</label>
+      <input type="date" class="expiry-input" id="expiry-date-input" value="${expiry}" onchange="saveExpiry(this.value)">
+    </div>` : '';
+
+  // Cédula centralizada info (no aplica al doc del codeudor)
+  const cedulaInfo = (appState.user?.cedula && !isCodeudorDoc) ? `
+    <div class="doc-info-row">
+      <span class="doc-info-label">Cédula (centralizada)</span>
+      <span class="doc-info-val">${appState.user.cedula}</span>
+    </div>` : '';
+
+  document.getElementById('doc-detail-body').innerHTML = `
+    ${alertBanner}
+    <div class="doc-preview-area">${previewContent}</div>
+    <div class="doc-info-card">
+      <div class="doc-info-row">
+        <span class="doc-info-label">Estado</span>
+        <span class="doc-info-val ${(daysLeft!==null&&daysLeft<=3)?'danger':''}">${saved.uploaded ? (daysLeft!==null&&daysLeft<0?'Vencido':daysLeft!==null&&daysLeft<=3?'Por vencer':'Cargado') : 'Sin cargar'}</span>
+      </div>
+      ${cedulaInfo}
+      ${saved.uploadDate ? `<div class="doc-info-row"><span class="doc-info-label">Cargado el</span><span class="doc-info-val">${saved.uploadDate}</span></div>` : ''}
+      ${expiry ? `<div class="doc-info-row"><span class="doc-info-label">Vence</span><span class="doc-info-val ${daysLeft!==null&&daysLeft<=3?'danger':''}">${expiry}</span></div>` : ''}
+      ${expirySection}
+    </div>
+    <button class="btn-primary" onclick="openDocUpload('${docId}','${folderKey}')">
+      ${saved.uploaded ? '↻ Actualizar documento' : '📎 Cargar documento'}
+    </button>
+  `;
+
+  goTo('screen-doc-detail');
+}
+
+function saveExpiry(value) {
+  if (!_currentDocId || !value) return;
+  if (!appState.documents[_currentDocId]) appState.documents[_currentDocId] = {};
+  appState.documents[_currentDocId].expiry = value;
+  save();
+  checkDocumentAlerts();
+  openDocDetail(_currentDocId, _currentDocFolder);
+}
+
+function openDocUpload(docId, folderKey) {
+  _currentDocId = docId;
+  _currentDocFolder = folderKey;
+  document.getElementById('upload-sheet').classList.add('show');
+}
+
+function closeUploadSheet() {
+  document.getElementById('upload-sheet').classList.remove('show');
+}
+
+function pickDoc(mode) {
+  closeUploadSheet();
+  if (mode === 'camera') {
+    cameraTarget = 'doc-upload';
+    openCamera('doc-upload');
+  } else {
+    const i = document.getElementById('file-doc-upload');
+    i.value = '';
+    i.click();
+  }
+}
+
+function handleDocUpload(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => finalizeDocUpload(e.target.result);
+  reader.readAsDataURL(input.files[0]);
+}
+
+function finalizeDocUpload(dataURL) {
+  if (!_currentDocId) return;
+  if (!appState.documents[_currentDocId]) appState.documents[_currentDocId] = {};
+  appState.documents[_currentDocId].uploaded = true;
+  appState.documents[_currentDocId].imageData = dataURL;
+  appState.documents[_currentDocId].uploadDate = new Date().toLocaleDateString('es-CO');
+  save();
+  addHistory('Documento cargado', getDocName(_currentDocId), 'doc');
+  toast('✅ Documento cargado exitosamente');
+  if (currentScreen === 'screen-doc-detail') {
+    openDocDetail(_currentDocId, _currentDocFolder);
+  } else if (currentScreen === 'screen-docs') {
+    renderDocsList(_currentDocFolder);
+  }
+  checkDocumentAlerts();
+}
+
+function getDocName(docId) {
+  if (docId.startsWith('codeudor-')) return 'Documentos del Codeudor';
+  for (const folder of Object.values(appState.vault)) {
+    const doc = folder.docs.find(d => d.id === docId);
+    if (doc) return doc.name;
+  }
+  return 'Documento';
+}
+
+// ===================== QR POR PRODUCTO =====================
+let qrTimer = null;
+let qrSecondsLeft = 300;
+window._qrFolderKey = null;
+
+function openProductQR(folderKey) {
+  window._qrFolderKey = folderKey;
+  const folder = appState.vault[folderKey];
+  document.getElementById('qr-screen-title').textContent = 'QR de ' + folder.name;
+  document.getElementById('qr-instruction-text').textContent = `Presenta este código en la entidad para compartir solo los documentos de ${folder.name}.`;
+  goTo('screen-qr');
+  startQR(folderKey);
+}
+
+function startQR(folderKey) {
+  const key = folderKey || window._qrFolderKey;
+  if (!key) { goTo('screen-vault'); return; }
+  window._qrFolderKey = key;
+  const folder = appState.vault[key];
+
+  clearInterval(qrTimer);
+  qrSecondsLeft = 300;
+  document.getElementById('qr-expired').classList.remove('show');
+
+  // Solo se incluyen los documentos de ESTE producto que ya fueron cargados
+  const docsIncluidos = folder.docs
+    .filter(d => appState.documents[d.id]?.uploaded)
+    .map(d => d.name);
+  // Incluir codeudor si fue cargado para este producto
+  const codeudorId = 'codeudor-' + key;
+  if (appState.documents[codeudorId]?.uploaded) {
+    docsIncluidos.push('Documentos del Codeudor');
+  }
+
+  const clean = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').slice(0, 42);
+  const hasta = new Date(Date.now() + 300000).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+  const lines = [
+    'SMART UNION - Tramite: ' + clean(folder.name),
+    'Titular: ' + clean(appState.user?.name || 'Usuario'),
+    'Cedula: ' + (appState.user?.cedula || '-'),
+    'Documentos (' + docsIncluidos.length + '):'
+  ].concat(docsIncluidos.slice(0, 10).map((d, i) => (i + 1) + '. ' + clean(d)));
+  if (docsIncluidos.length > 10) lines.push('+' + (docsIncluidos.length - 10) + ' mas');
+  lines.push('Valido hasta: ' + hasta);
+  const qrData = lines.join('\n');
+
+  // Lista visible de lo que contiene el QR
+  const contents = document.getElementById('qr-contents');
+  contents.innerHTML = docsIncluidos.length
+    ? '<div class="qr-contents-title">Este QR incluye (' + docsIncluidos.length + ')</div><ul>' + docsIncluidos.map(d => '<li>' + d + '</li>').join('') + '</ul>'
+    : '<div class="qr-empty">Aún no hay documentos cargados en este producto.</div>';
+
+  const qrDiv = document.getElementById('qr-canvas');
+  qrDiv.innerHTML = '';
+  try {
+    if (typeof QRCode === 'undefined') throw new Error('QRCode lib');
+    new QRCode(qrDiv, {
+      text: qrData,
+      width: 240, height: 240,
+      colorDark: '#1a2756', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.L
+    });
+  } catch (e) {
+    qrDiv.innerHTML = '<div style="padding:20px;text-align:center;font-size:0.82rem;color:#e53e3e;">No se pudo generar el QR. Revisa tu conexión y toca “Generar nuevo QR”.</div>';
+  }
+
+  updateQRTimer();
+  qrTimer = setInterval(() => {
+    qrSecondsLeft--;
+    updateQRTimer();
+    if (qrSecondsLeft <= 0) {
+      clearInterval(qrTimer);
+      document.getElementById('qr-timer').textContent = '00:00';
+      document.getElementById('qr-bar').style.width = '0%';
+      document.getElementById('qr-expired').classList.add('show');
+    }
+  }, 1000);
+
+  addHistory('QR generado', 'Código QR de ' + folder.name, 'qr');
+  save();
+}
+
+function updateQRTimer() {
+  const mins = Math.floor(qrSecondsLeft / 60);
+  const secs = qrSecondsLeft % 60;
+  const str = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+  const el = document.getElementById('qr-timer');
+  const bar = document.getElementById('qr-bar');
+  if (el) { el.textContent = str; el.className = 'qr-timer' + (qrSecondsLeft <= 60 ? ' urgent' : ''); }
+  if (bar) { bar.style.width = ((qrSecondsLeft/300)*100) + '%'; bar.className = 'qr-timer-fill' + (qrSecondsLeft <= 60 ? ' urgent' : ''); }
+}
+
+function cancelQR() {
+  clearInterval(qrTimer);
+  const key = window._qrFolderKey;
+  if (key) {
+    goTo('screen-docs');
+    document.getElementById('docs-title').textContent = appState.vault[key].name;
+    renderDocsList(key);
+  } else {
+    goTo('screen-vault');
+  }
+}
+
+// ===================== ALERTS & NOTIFICATIONS =====================
+function getDaysUntilExpiry(expiryStr) {
+  if (!expiryStr) return null;
+  const expiry = new Date(expiryStr);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  expiry.setHours(0,0,0,0);
+  return Math.floor((expiry - today) / 86400000);
+}
+
+function checkDocumentAlerts() {
+  const newNotifs = [];
+  let hasUnread = false;
+
+  for (const [folderKey, folder] of Object.entries(appState.vault)) {
+    for (const doc of folder.docs) {
+      const saved = appState.documents[doc.id];
+      if (!saved || !saved.expiry) continue;
+      const days = getDaysUntilExpiry(saved.expiry);
+      if (days !== null && days <= 3 && days >= 0) {
+        const notifId = `alert-${doc.id}-${saved.expiry}`;
+        if (!appState.notifications.some(n => n.id === notifId)) {
+          newNotifs.push({ id: notifId, title: '⚠️ Documento próximo a vencer', desc: `"${doc.name}" vence en ${days} día${days===1?'':'s'}. Actualízalo pronto.`, time: 'Ahora', type: 'alert', unread: true });
+          hasUnread = true;
+        }
+      } else if (days !== null && days < 0) {
+        const notifId = `expired-${doc.id}-${saved.expiry}`;
+        if (!appState.notifications.some(n => n.id === notifId)) {
+          newNotifs.push({ id: notifId, title: '❌ Documento vencido', desc: `"${doc.name}" está vencido. Debes actualizarlo.`, time: 'Reciente', type: 'alert', unread: true });
+          hasUnread = true;
+        }
+      }
+    }
+  }
+
+  appState.notifications.unshift(...newNotifs);
+  if (appState.notifications.length > 20) appState.notifications = appState.notifications.slice(0,20);
+
+  const badge = document.getElementById('notif-badge');
+  const anyUnread = appState.notifications.some(n => n.unread);
+  if (anyUnread) { badge.classList.add('show'); } else { badge.classList.remove('show'); }
+  save();
+}
+
+function toggleNotif() {
+  const overlay = document.getElementById('notif-overlay');
+  overlay.classList.toggle('show');
+  if (overlay.classList.contains('show')) renderNotifications();
+}
+
+function closeNotif(e) {
+  document.getElementById('notif-overlay').classList.remove('show');
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notif-list');
+  if (appState.notifications.length === 0) {
+    list.innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px;font-size:0.88rem;">Sin notificaciones</div>';
+    return;
+  }
+  list.innerHTML = appState.notifications.map(n => `
+  <div class="notif-item ${n.unread?'unread':''}" onclick="markNotifRead('${n.id}')">
+    <div class="notif-item-icon" style="background:${n.type==='alert'?'#fff0f0':'#e0f8fb'}">
+      <span style="font-size:1.2rem;">${n.type==='alert'?'⚠️':'🔔'}</span>
+    </div>
+    <div class="notif-item-body">
+      <div class="notif-item-title">${n.title}</div>
+      <div class="notif-item-desc">${n.desc}</div>
+      <div class="notif-item-time">${n.time}</div>
+    </div>
+  </div>`).join('');
+  appState.notifications.forEach(n => n.unread = false);
+  document.getElementById('notif-badge').classList.remove('show');
+  save();
+}
+
+function markNotifRead(id) {
+  const n = appState.notifications.find(n => n.id === id);
+  if (n) { n.unread = false; save(); }
+}
+
+// ===================== HISTORY =====================
+function addHistory(title, desc, type) {
+  appState.history.unshift({
+    title, desc, type,
+    date: new Date().toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' })
+  });
+  if (appState.history.length > 50) appState.history = appState.history.slice(0,50);
+}
+
+function loadHistory() {
+  const list = document.getElementById('history-list');
+  if (appState.history.length === 0) {
+    list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>No hay actividad registrada aún</span></div>`;
+    return;
+  }
+  const icons = { qr:'🔲', doc:'📄', alert:'⚠️' };
+  const bgColors = { qr:'#e0f8fb', doc:'#e8f4e8', alert:'#fff0f0' };
+  list.innerHTML = appState.history.map(h => `
+  <div class="history-item">
+    <div class="history-icon" style="background:${bgColors[h.type]||'#f4f6fa'};font-size:1.2rem;">${icons[h.type]||'📋'}</div>
+    <div class="history-info">
+      <div class="history-title">${h.title}</div>
+      <div class="history-date">${h.desc} · ${h.date}</div>
+    </div>
+    <span class="history-badge ${h.type}">${h.type==='qr'?'QR':h.type==='doc'?'Doc':'Alerta'}</span>
+  </div>`).join('');
+}
+
+// ===================== LOGIN BIO =====================
+function loginBio() {
+  if (!appState.user) {
+    toast('Primero regístra tu identidad');
+    return;
+  }
+  toast('🔍 Verificando identidad facial...');
+  setTimeout(() => {
+    toast('✅ ¡Bienvenido de nuevo, ' + appState.user.name.split(' ')[0] + '!');
+    setTimeout(() => goToHome(), 600);
+  }, 2000);
+}
+
+// ===================== TOAST =====================
+let toastTimeout = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===================== START =====================
+init();
+</script>
+</body>
+</html>
